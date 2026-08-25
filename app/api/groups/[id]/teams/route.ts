@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (teamCount < 2) teamCount = 2;
 
   const members = await sql`
-    SELECT u.id, u.name
+    SELECT u.id, COALESCE(NULLIF(BTRIM(gm.nickname), ''), u.name) AS name
     FROM group_members gm
     JOIN users u ON u.id = gm.user_id
     WHERE gm.group_id = ${params.id}

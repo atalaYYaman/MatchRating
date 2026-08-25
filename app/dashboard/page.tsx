@@ -19,13 +19,16 @@ export default function DashboardPage() {
   const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [userName, setUserName] = useState<string>("");
 
-  async function loadGroups() {
-    const res = await fetch("/api/groups");
+  async function loadGroups(isRefresh = false) {
+    if (isRefresh) setRefreshing(true);
+    const res = await fetch("/api/groups", { cache: "no-store" });
     const data = await res.json();
     if (res.ok) setGroups(data.groups);
     setLoading(false);
+    setRefreshing(false);
   }
 
   useEffect(() => {
@@ -129,7 +132,12 @@ export default function DashboardPage() {
 
       {error && <p className="error">{error}</p>}
 
-      <h3>Takımlarım</h3>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <h3 style={{ margin: 0 }}>Takımlarım</h3>
+        <button className="secondary small" onClick={() => loadGroups(true)} disabled={refreshing || loading}>
+          {refreshing ? "Yenileniyor..." : "Yenile"}
+        </button>
+      </div>
       {loading ? (
         <p>Yükleniyor...</p>
       ) : groups.length === 0 ? (

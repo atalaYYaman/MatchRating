@@ -21,7 +21,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   if (!isMember) return NextResponse.json({ error: "Bu takıma erişiminiz yok." }, { status: 403 });
 
   const members = await sql`
-    SELECT u.id, u.name
+    SELECT u.id, COALESCE(NULLIF(BTRIM(gm.nickname), ''), u.name) AS name
     FROM group_members gm
     JOIN users u ON u.id = gm.user_id
     WHERE gm.group_id = ${params.id}

@@ -139,6 +139,32 @@ th, td {
   font-size: 13px;
 }
 
+button.small {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.collapse-toggle {
+  background: none;
+  border: none;
+  color: #1a1a1a;
+  padding: 0;
+  margin: 0 0 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.17em;
+  font-weight: bold;
+  font-family: inherit;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.collapse-toggle:hover {
+  color: #1a73e8;
+}
+
 nav.top {
   display: flex;
   justify-content: space-between;

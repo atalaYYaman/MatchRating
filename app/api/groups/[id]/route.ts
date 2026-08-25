@@ -23,12 +23,21 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   if (!group) return NextResponse.json({ error: "Takım bulunamadı." }, { status: 404 });
 
   const membersResult = await sql`
-    SELECT u.id, u.name, u.email, gm.joined_at
+    SELECT u.id,
+           u.name AS account_name,
+           u.email,
+           gm.nickname,
+           gm.joined_at,
+           COALESCE(NULLIF(BTRIM(gm.nickname), ''), u.name) AS name
     FROM group_members gm
     JOIN users u ON u.id = gm.user_id
     WHERE gm.group_id = ${params.id}
     ORDER BY gm.joined_at ASC
   `;
 
-  return NextResponse.json({ group, members: membersResult.rows });
+  return NextResponse.json({
+    group,
+    members: membersResult.rows,
+    isOwner: group.owner_id === session.userId,
+  });
 }

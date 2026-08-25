@@ -26,6 +26,8 @@ export type GroupMember = {
   user_id: string;
   joined_at: string;
   name: string;
+  account_name: string;
+  nickname: string | null;
   email: string;
 };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { SKILLS, SkillKey } from "@/lib/skills";
@@ -36,17 +36,20 @@ export default function VotePage() {
   const [scores, setScores] = useState<Record<SkillKey, number>>({ ...DEFAULT_SCORES });
   const [primaryPosition, setPrimaryPosition] = useState<PositionKey | "">("");
   const [secondaryPosition, setSecondaryPosition] = useState<PositionKey | "">("");
+  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    try {
       const [meRes, groupRes, votesRes] = await Promise.all([
-        fetch("/api/auth/me"),
-        fetch(`/api/groups/${groupId}`),
-        fetch(`/api/groups/${groupId}/vote`),
+        fetch("/api/auth/me", { cache: "no-store" }),
+        fetch(`/api/groups/${groupId}`, { cache: "no-store" }),
+        fetch(`/api/groups/${groupId}/vote`, { cache: "no-store" }),
       ]);
       const me = await meRes.json();
       const groupData = await groupRes.json();
@@ -54,10 +57,10 @@ export default function VotePage() {
 
       if (!groupRes.ok) {
         setError(groupData.error || "Takım yüklenemedi.");
-        setLoading(false);
         return;
       }
 
+      setError(null);
       setMeId(me.user?.id || null);
       setMembers(groupData.members);
 
@@ -65,10 +68,15 @@ export default function VotePage() {
         setSkillVotes((votesData.votes as ExistingVote[]) || []);
         setPositionVotes((votesData.positionVotes as ExistingPositionVote[]) || []);
       }
+    } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-    load();
   }, [groupId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const teammates = useMemo(
     () => members.filter((m) => m.id !== meId),
@@ -171,7 +179,12 @@ export default function VotePage() {
   return (
     <div>
       <p><Link href={`/group/${groupId}`}>← Takıma dön</Link></p>
-      <h1>Oylama</h1>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <h1 style={{ margin: 0 }}>Oylama</h1>
+        <button className="secondary" onClick={() => load(true)} disabled={refreshing}>
+          {refreshing ? "Yenileniyor..." : "Listeyi Yenile"}
+        </button>
+      </div>
       <p>
         Takım arkadaşlarını 6 yetenek üzerinden {MIN_SCORE}-{MAX_SCORE} arası
         puanla; birincil ve ikincil mevki seç.

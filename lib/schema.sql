@@ -22,9 +22,12 @@ CREATE TABLE IF NOT EXISTS groups (
 CREATE TABLE IF NOT EXISTS group_members (
   group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  nickname TEXT,
   joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (group_id, user_id)
 );
+
+ALTER TABLE group_members ADD COLUMN IF NOT EXISTS nickname TEXT;
 
 CREATE TABLE IF NOT EXISTS votes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

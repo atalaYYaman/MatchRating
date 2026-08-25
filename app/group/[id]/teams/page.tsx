@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { POSITIONS, formatPositions } from "@/lib/positions";
@@ -31,24 +31,41 @@ export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const knownIdsRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
-    async function load() {
-      const res = await fetch(`/api/groups/${groupId}`);
+  const load = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoadingMembers(true);
+    try {
+      const res = await fetch(`/api/groups/${groupId}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Takım yüklenemedi.");
-        setLoadingMembers(false);
         return;
       }
       const list = (data.members || []) as Member[];
+      const oldIds = knownIdsRef.current;
+      knownIdsRef.current = new Set(list.map((m) => m.id));
       setMembers(list);
-      setSelectedIds(new Set(list.map((m) => m.id)));
+      setSelectedIds((prevSelected) => {
+        const next = new Set<string>();
+        for (const m of list) {
+          if (prevSelected.has(m.id) || !oldIds.has(m.id)) next.add(m.id);
+        }
+        return next;
+      });
+      setError(null);
+    } finally {
       setLoadingMembers(false);
+      setRefreshing(false);
     }
-    load();
   }, [groupId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   function togglePlayer(id: string) {
     setSelectedIds((prev) => {
@@ -94,7 +111,12 @@ export default function TeamsPage() {
   return (
     <div>
       <p><Link href={`/group/${groupId}`}>← Takıma dön</Link></p>
-      <h1>Rastgele Dengeli Takımlar</h1>
+      <div className="row" style={{ justifyContent: "space-between" }}>
+        <h1 style={{ margin: 0 }}>Rastgele Dengeli Takımlar</h1>
+        <button className="secondary" onClick={() => load(true)} disabled={refreshing || loadingMembers}>
+          {refreshing ? "Yenileniyor..." : "Listeyi Yenile"}
+        </button>
+      </div>
       <p>
         Oylama sonuçlarına göre oyuncuların gücü ve mevkileri hesaplanır;
         oyuncular rastgele fakat takımların toplam gücü ve mevki adetleri
