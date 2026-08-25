@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { SKILLS } from "@/lib/skills";
+import { positionLabel, PositionKey } from "@/lib/positions";
 
 type Member = { id: string; name: string; email: string };
 type Group = { id: string; name: string; invite_code: string };
@@ -13,6 +14,8 @@ type Rating = {
   overall: number;
   skills: Record<string, number>;
   hasVotes: boolean;
+  primaryPosition: PositionKey | null;
+  secondaryPosition: PositionKey | null;
 };
 
 export default function GroupPage() {
@@ -84,6 +87,8 @@ export default function GroupPage() {
           <thead>
             <tr>
               <th>İsim</th>
+              <th>1. Mevki</th>
+              <th>2. Mevki</th>
               {SKILLS.map((s) => <th key={s.key}>{s.label}</th>)}
               <th>Genel</th>
             </tr>
@@ -92,6 +97,8 @@ export default function GroupPage() {
             {ratings.map((r) => (
               <tr key={r.userId}>
                 <td>{r.name}{!r.hasVotes && <span className="pill" style={{ marginLeft: 6 }}>oy yok</span>}</td>
+                <td>{positionLabel(r.primaryPosition)}</td>
+                <td>{positionLabel(r.secondaryPosition)}</td>
                 {SKILLS.map((s) => <td key={s.key}>{r.skills[s.key]}</td>)}
                 <td><strong>{r.overall}</strong></td>
               </tr>

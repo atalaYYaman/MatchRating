@@ -127,6 +127,18 @@ th, td {
   margin: 0;
 }
 
+.pos-selects {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.pos-summary {
+  margin: 0 0 8px;
+  color: #555;
+  font-size: 13px;
+}
+
 nav.top {
   display: flex;
   justify-content: space-between;

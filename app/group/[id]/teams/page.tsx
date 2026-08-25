@@ -3,14 +3,22 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { POSITIONS, formatPositions } from "@/lib/positions";
 
 type Member = { id: string; name: string; email: string };
-type TeamPlayer = { userId: string; name: string; overall: number };
+type TeamPlayer = {
+  userId: string;
+  name: string;
+  overall: number;
+  primaryPosition: string | null;
+  secondaryPosition: string | null;
+};
 type Team = {
   index: number;
   players: TeamPlayer[];
   totalRating: number;
   averageRating: number;
+  positionCounts: Record<string, number>;
 };
 
 export default function TeamsPage() {
@@ -88,9 +96,10 @@ export default function TeamsPage() {
       <p><Link href={`/group/${groupId}`}>← Takıma dön</Link></p>
       <h1>Rastgele Dengeli Takımlar</h1>
       <p>
-        Oylama sonuçlarına göre oyuncuların gücü hesaplanır; oyuncular
-        rastgele fakat takımların toplam gücü birbirine yakın olacak şekilde
-        dağıtılır. Her tıklamada farklı bir dağılım çıkabilir.
+        Oylama sonuçlarına göre oyuncuların gücü ve mevkileri hesaplanır;
+        oyuncular rastgele fakat takımların toplam gücü ve mevki adetleri
+        birbirine yakın olacak şekilde dağıtılır. Her tıklamada farklı bir
+        dağılım çıkabilir.
       </p>
 
       <div className="card">
@@ -154,10 +163,16 @@ export default function TeamsPage() {
                 <h3>Takım {t.index + 1}</h3>
                 <span className="pill">Ort. güç: {t.averageRating}</span>
               </div>
+              <p className="pos-summary">
+                {POSITIONS.map((p) => `${p.label} ${t.positionCounts?.[p.key] ?? 0}`).join(" · ")}
+              </p>
               <ul>
                 {t.players.map((p) => (
                   <li key={p.userId}>
-                    {p.name} <span style={{ color: "#888" }}>({p.overall})</span>
+                    {p.name}{" "}
+                    <span style={{ color: "#888" }}>
+                      ({p.overall}) · {formatPositions(p.primaryPosition, p.secondaryPosition)}
+                    </span>
                   </li>
                 ))}
               </ul>

@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { SKILL_KEYS } from "@/lib/skills";
 import { DEFAULT_SCORE } from "@/lib/scoring";
 import { generateBalancedTeams } from "@/lib/teamBalancer";
+import { POSITIONS, positionsByTarget } from "@/lib/positions";
 
 async function assertMember(groupId: string, userId: string) {
   const result = await sql`
@@ -56,6 +57,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     GROUP BY target_id, skill
   `;
 
+  const positionVoteRows = await sql`
+    SELECT target_id, primary_position, secondary_position
+    FROM position_votes
+    WHERE group_id = ${params.id}
+  `;
+
   const byTarget = new Map<string, Record<string, number>>();
   for (const row of skillAverages.rows) {
     const targetId = row.target_id as string;
@@ -63,14 +70,25 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     byTarget.get(targetId)![row.skill as string] = row.avg_score as number;
   }
 
+  const positions = positionsByTarget(
+    positionVoteRows.rows as {
+      target_id: string;
+      primary_position: string;
+      secondary_position: string;
+    }[]
+  );
+
   const players = selected.map((m) => {
     const skills = byTarget.get(m.id) || {};
     let sum = 0;
     for (const key of SKILL_KEYS) sum += skills[key] ?? DEFAULT_SCORE;
+    const pos = positions.get(m.id as string);
     return {
       userId: m.id as string,
       name: m.name as string,
       overall: Math.round((sum / SKILL_KEYS.length) * 10) / 10,
+      primaryPosition: pos?.primary ?? null,
+      secondaryPosition: pos?.secondary ?? null,
     };
   });
 
@@ -85,6 +103,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         t.players.length > 0
           ? Math.round((t.totalRating / t.players.length) * 10) / 10
           : 0,
+      positionCounts: Object.fromEntries(
+        POSITIONS.map((p) => [
+          p.key,
+          t.players.filter(
+            (pl) => pl.primaryPosition === p.key || pl.secondaryPosition === p.key
+          ).length,
+        ])
+      ),
     })),
   });
 }

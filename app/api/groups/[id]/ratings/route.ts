@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { SKILL_KEYS } from "@/lib/skills";
 import { DEFAULT_SCORE } from "@/lib/scoring";
+import { positionsByTarget } from "@/lib/positions";
 
 async function assertMember(groupId: string, userId: string) {
   const result = await sql`
@@ -11,7 +12,7 @@ async function assertMember(groupId: string, userId: string) {
   return result.rows.length > 0;
 }
 
-// Her uye icin: 6 yetenegin ortalamasi + genel ortalama (aldiklari oylara gore)
+// Her uye icin: 6 yetenegin ortalamasi + genel ortalama + birincil/ikincil mevki
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
@@ -26,12 +27,19 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     WHERE gm.group_id = ${params.id}
   `;
 
-  const skillAverages = await sql`
-    SELECT target_id, skill, AVG(score)::float AS avg_score, COUNT(*)::int AS vote_count
-    FROM votes
-    WHERE group_id = ${params.id}
-    GROUP BY target_id, skill
-  `;
+  const [skillAverages, positionVoteRows] = await Promise.all([
+    sql`
+      SELECT target_id, skill, AVG(score)::float AS avg_score, COUNT(*)::int AS vote_count
+      FROM votes
+      WHERE group_id = ${params.id}
+      GROUP BY target_id, skill
+    `,
+    sql`
+      SELECT target_id, primary_position, secondary_position
+      FROM position_votes
+      WHERE group_id = ${params.id}
+    `,
+  ]);
 
   const byTarget = new Map<string, Record<string, number>>();
   const voteCounts = new Map<string, number>();
@@ -41,6 +49,14 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     byTarget.get(targetId)![row.skill as string] = row.avg_score as number;
     voteCounts.set(targetId, Math.max(voteCounts.get(targetId) || 0, row.vote_count as number));
   }
+
+  const positions = positionsByTarget(
+    positionVoteRows.rows as {
+      target_id: string;
+      primary_position: string;
+      secondary_position: string;
+    }[]
+  );
 
   const ratings = members.rows.map((m) => {
     const skills = byTarget.get(m.id) || {};
@@ -52,6 +68,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       sum += val;
     }
     const overall = Math.round((sum / SKILL_KEYS.length) * 10) / 10;
+    const pos = positions.get(m.id as string);
     return {
       userId: m.id,
       name: m.name,
@@ -59,6 +76,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       overall,
       voteCount: voteCounts.get(m.id) || 0,
       hasVotes: byTarget.has(m.id),
+      primaryPosition: pos?.primary ?? null,
+      secondaryPosition: pos?.secondary ?? null,
     };
   });
 

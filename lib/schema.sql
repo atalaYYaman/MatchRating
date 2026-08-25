@@ -40,6 +40,22 @@ CREATE TABLE IF NOT EXISTS votes (
 CREATE INDEX IF NOT EXISTS idx_votes_group_target ON votes (group_id, target_id);
 CREATE INDEX IF NOT EXISTS idx_group_members_user ON group_members (user_id);
 
+CREATE TABLE IF NOT EXISTS position_votes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  voter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  target_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  primary_position TEXT NOT NULL,
+  secondary_position TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (group_id, voter_id, target_id),
+  CHECK (primary_position <> secondary_position),
+  CHECK (primary_position IN ('kaleci', 'stoper', 'bek', 'orta_saha', 'kanat', 'forvet')),
+  CHECK (secondary_position IN ('kaleci', 'stoper', 'bek', 'orta_saha', 'kanat', 'forvet'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_position_votes_group_target ON position_votes (group_id, target_id);
+
 -- Mevcut veritabanlarinda 1-10 kisitini 60-90'a guncelle.
 -- Once eski CHECK kalkar (yoksa 60-90'a cevirme basarisiz olur), sonra skorlar
 -- dogrusal map edilir (1->60, 10->90), en sonda yeni kisit eklenir.

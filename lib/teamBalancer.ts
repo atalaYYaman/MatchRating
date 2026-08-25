@@ -2,6 +2,8 @@ export type RatedPlayer = {
   userId: string;
   name: string;
   overall: number; // 60-90 arasi ortalama puan
+  primaryPosition: string | null;
+  secondaryPosition: string | null;
 };
 
 export type Team = {
@@ -20,14 +22,35 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+function occupyCount(team: Team, position: string | null): number {
+  if (!position) return 0;
+  return team.players.filter(
+    (p) => p.primaryPosition === position || p.secondaryPosition === position
+  ).length;
+}
+
+function isBetterTeam(candidate: Team, current: Team, player: RatedPlayer): boolean {
+  const cPrimary = occupyCount(candidate, player.primaryPosition);
+  const tPrimary = occupyCount(current, player.primaryPosition);
+  if (cPrimary !== tPrimary) return cPrimary < tPrimary;
+
+  const cSecondary = occupyCount(candidate, player.secondaryPosition);
+  const tSecondary = occupyCount(current, player.secondaryPosition);
+  if (cSecondary !== tSecondary) return cSecondary < tSecondary;
+
+  if (candidate.totalRating !== current.totalRating) {
+    return candidate.totalRating < current.totalRating;
+  }
+  return candidate.players.length < current.players.length;
+}
+
 /**
  * Rastgele ama dengeli takimlar olusturur.
  * 1) Oyuncular once rastgele karistirilir (esit puanlilar arasinda adalet).
- * 2) Puana gore buyukten kucuge siralanir (stabil sort sayesinde esitler
- *    karisik sirada kalir).
- * 3) Her oyuncu, o an toplam puani en dusuk olan takima eklenir (greedy
- *    balancing). Boylece takimlarin toplam/ortalama gucu birbirine yakin
- *    olur, ama kadro rastgele sekillenir.
+ * 2) Puana gore buyukten kucuge siralanir.
+ * 3) Her oyuncu, ayni mevkide (once birincil, sonra ikincil) daha az oyuncusu
+ *    olan takima eklenir; esitlikte toplam puani dusuk olan tercih edilir.
+ *    Boylece mevki adetleri ve guc birbirine yakin kalir.
  */
 export function generateBalancedTeams(
   players: RatedPlayer[],
@@ -46,16 +69,9 @@ export function generateBalancedTeams(
   }));
 
   for (const player of sorted) {
-    // Toplam puani en dusuk (esitlikte oyuncu sayisi en az) takimi bul
     let target = teams[0];
     for (const t of teams) {
-      if (
-        t.totalRating < target.totalRating ||
-        (t.totalRating === target.totalRating &&
-          t.players.length < target.players.length)
-      ) {
-        target = t;
-      }
+      if (isBetterTeam(t, target, player)) target = t;
     }
     target.players.push(player);
     target.totalRating += player.overall;

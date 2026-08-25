@@ -51,14 +51,16 @@ takımlar oluşturulan basit bir demo.
    birinin davet koduyla mevcut bir takıma katılır.
 3. Takım sayfasında üyeler, davet kodu ve güncel yetenek puanları görünür.
 4. "Oylama Yap" sayfasında her üye, diğer tüm üyeleri Şut / Pas / Dribling /
-   Hız / Fizik / Defans için 60-90 arası puanlar. Oylar `votes` tablosunda
-   (grup, oy veren, oylanan, yetenek) bazında tutulur; tekrar oylarsa güncellenir.
+   Hız / Fizik / Defans için 60-90 arası puanlar; ayrıca birincil ve ikincil
+   mevki seçer. Yetenek oyları `votes`, mevki oyları `position_votes`
+   tablosunda tutulur. Bir oyuncunun görünen mevkisi, aldığı oyların
+   ağırlıklı toplamına göre belirlenir (birincil oy 2, ikincil oy 1 puan).
 5. "Takımları Oluştur" sayfasında istenen takım sayısı girilir ve kadroya
    dahil edilecek oyuncular seçilir (varsayılan: hepsi); sistem her
-   oyuncunun aldığı oylardan ortalama gücünü hesaplar, oyuncuları rastgele
-   karıştırıp toplam güce göre takımlara dengeli dağıtır (greedy balancing).
-   Hiç oy almamış oyuncular nötr puan (75) ile hesaba katılır. Sonuç
-   kaydedilmez, her tıklamada yeniden hesaplanır.
+   oyuncunun aldığı oylardan ortalama gücünü ve mevkilerini hesaplar,
+   oyuncuları rastgele karıştırıp hem toplam güce hem mevki adetlerine
+   göre takımlara dengeli dağıtır. Hiç oy almamış oyuncular nötr puan (75)
+   ile hesaba katılır. Sonuç kaydedilmez, her tıklamada yeniden hesaplanır.
 
 ## Notlar / Sonraki Adımlar
 

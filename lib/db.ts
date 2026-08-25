@@ -37,3 +37,12 @@ export type Vote = {
   skill: string;
   score: number;
 };
+
+export type PositionVote = {
+  id: string;
+  group_id: string;
+  voter_id: string;
+  target_id: string;
+  primary_position: string;
+  secondary_position: string;
+};
