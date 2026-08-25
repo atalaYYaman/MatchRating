@@ -1,9 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { generateBalancedTeams } from "@/lib/teamBalancer";
-import { POSITIONS } from "@/lib/positions";
+import { generateBalancedTeams, RatedPlayer } from "@/lib/teamBalancer";
+import { POSITIONS, isPositionKey } from "@/lib/positions";
 import { computeGroupRatings } from "@/lib/ratings";
+import { isValidScore } from "@/lib/scoring";
+
+const MAX_GUESTS = 20;
+
+function parseGuests(raw: unknown): RatedPlayer[] {
+  if (!Array.isArray(raw)) return [];
+  const guests: RatedPlayer[] = [];
+  const usedIds = new Set<string>();
+
+  for (const item of raw) {
+    if (guests.length >= MAX_GUESTS) break;
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    const name = typeof row.name === "string" ? row.name.trim().slice(0, 40) : "";
+    if (!name) continue;
+    const overall = Math.round(Number(row.overall));
+    if (!isValidScore(overall)) continue;
+    const primary = isPositionKey(row.primaryPosition) ? row.primaryPosition : null;
+    const secondary =
+      isPositionKey(row.secondaryPosition) && row.secondaryPosition !== primary
+        ? row.secondaryPosition
+        : null;
+
+    let userId =
+      typeof row.id === "string" && row.id.startsWith("guest-") && !usedIds.has(row.id)
+        ? row.id
+        : `guest-${crypto.randomUUID()}`;
+    usedIds.add(userId);
+
+    guests.push({
+      userId,
+      name,
+      overall,
+      primaryPosition: primary,
+      secondaryPosition: secondary,
+    });
+  }
+
+  return guests;
+}
 
 async function assertMember(groupId: string, userId: string) {
   const result = await sql`
@@ -36,28 +76,34 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     selected = ratings.filter((r) => requestedSet.has(r.userId));
   }
 
-  if (selected.length < teamCount) {
+  const guests = parseGuests(body?.guests);
+
+  // Eşik altı oyuncular da kendi (az güvenilir) ortalamalarıyla katılır; 75'e düşürülmez.
+  const players: RatedPlayer[] = [
+    ...selected.map((r) => ({
+      userId: r.userId,
+      name: r.name,
+      overall: r.overall,
+      primaryPosition: r.primaryPosition,
+      secondaryPosition: r.secondaryPosition,
+    })),
+    ...guests,
+  ];
+
+  if (players.length < teamCount) {
     return NextResponse.json(
-      { error: `Takım sayısı, seçilen oyuncu sayısından (${selected.length}) fazla olamaz.` },
+      { error: `Takım sayısı, seçilen oyuncu sayısından (${players.length}) fazla olamaz.` },
       { status: 400 }
     );
   }
 
-  // Eşik altı oyuncular da kendi (az güvenilir) ortalamalarıyla katılır; 75'e düşürülmez.
-  const players = selected.map((r) => ({
-    userId: r.userId,
-    name: r.name,
-    overall: r.overall,
-    primaryPosition: r.primaryPosition,
-    secondaryPosition: r.secondaryPosition,
-  }));
-
+  const guestIds = new Set(guests.map((g) => g.userId));
   const teams = generateBalancedTeams(players, teamCount);
 
   return NextResponse.json({
     teams: teams.map((t) => ({
       index: t.index,
-      players: t.players,
+      players: t.players.map((p) => ({ ...p, isGuest: guestIds.has(p.userId) })),
       totalRating: Math.round(t.totalRating * 10) / 10,
       averageRating:
         t.players.length > 0

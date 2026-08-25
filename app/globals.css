@@ -125,6 +125,22 @@ th, td {
   width: 16px;
   height: 16px;
   margin: 0;
+  flex-shrink: 0;
+}
+
+.player-pick-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.guest-form {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #eee;
 }
 
 .player-list-item {
