@@ -19,7 +19,9 @@ type Rating = {
   name: string;
   overall: number;
   skills: Record<string, number>;
+  voteCount: number;
   hasVotes: boolean;
+  hasEnoughVotes: boolean;
   primaryPosition: PositionKey | null;
   secondaryPosition: PositionKey | null;
 };
@@ -113,6 +115,9 @@ export default function GroupPage() {
   if (loading) return <p>Yükleniyor...</p>;
   if (error) return <p className="error">{error}</p>;
   if (!group) return null;
+
+  // Kendine oy verilemez; her oyuncu icin oylayabilecek uye sayisi N-1.
+  const possibleVoters = Math.max(0, members.length - 1);
 
   return (
     <div>
@@ -239,6 +244,10 @@ export default function GroupPage() {
           {refreshing ? "Yenileniyor..." : "Yenile"}
         </button>
       </div>
+      <p style={{ color: "#888", fontSize: 13, margin: "4px 0 8px" }}>
+        İsim yanındaki oran, oyuncuyu oylayan üye / oylayabilecek üye sayısıdır
+        ({possibleVoters} kişi oylayabilir).
+      </p>
       <div className="card" style={{ overflowX: "auto" }}>
         <table>
           <thead>
@@ -251,15 +260,31 @@ export default function GroupPage() {
             </tr>
           </thead>
           <tbody>
-            {ratings.map((r) => (
-              <tr key={r.userId}>
-                <td>{r.name}{!r.hasVotes && <span className="pill" style={{ marginLeft: 6 }}>oy yok</span>}</td>
-                <td>{positionLabel(r.primaryPosition)}</td>
-                <td>{positionLabel(r.secondaryPosition)}</td>
-                {SKILLS.map((s) => <td key={s.key}>{r.skills[s.key]}</td>)}
-                <td><strong>{r.overall}</strong></td>
-              </tr>
-            ))}
+            {ratings.map((r) => {
+              const voteRatio = `${r.voteCount}/${possibleVoters}`;
+              return (
+                <tr key={r.userId}>
+                  <td>
+                    {r.name}
+                    {!r.hasVotes && (
+                      <span className="pill" style={{ marginLeft: 6 }}>oy yok ({voteRatio})</span>
+                    )}
+                    {r.hasVotes && !r.hasEnoughVotes && (
+                      <span className="pill" style={{ marginLeft: 6 }}>
+                        Yetersiz oy ({voteRatio})
+                      </span>
+                    )}
+                    {r.hasEnoughVotes && (
+                      <span className="pill" style={{ marginLeft: 6 }}>{voteRatio} oy</span>
+                    )}
+                  </td>
+                  <td>{positionLabel(r.primaryPosition)}</td>
+                  <td>{positionLabel(r.secondaryPosition)}</td>
+                  {SKILLS.map((s) => <td key={s.key}>{r.skills[s.key]}</td>)}
+                  <td><strong>{r.overall}</strong></td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

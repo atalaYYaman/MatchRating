@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { SKILL_KEYS } from "@/lib/skills";
-import { DEFAULT_SCORE } from "@/lib/scoring";
 import { generateBalancedTeams } from "@/lib/teamBalancer";
-import { POSITIONS, positionsByTarget } from "@/lib/positions";
+import { POSITIONS } from "@/lib/positions";
+import { computeGroupRatings } from "@/lib/ratings";
 
 async function assertMember(groupId: string, userId: string) {
   const result = await sql`
@@ -25,22 +24,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   let teamCount = Number(body?.teamCount) || 2;
   if (teamCount < 2) teamCount = 2;
 
-  const members = await sql`
-    SELECT u.id, COALESCE(NULLIF(BTRIM(gm.nickname), ''), u.name) AS name
-    FROM group_members gm
-    JOIN users u ON u.id = gm.user_id
-    WHERE gm.group_id = ${params.id}
-  `;
-
-  const memberIds = new Set(members.rows.map((m) => m.id as string));
-  let selected = members.rows;
+  const ratings = await computeGroupRatings(params.id);
+  const memberIds = new Set(ratings.map((r) => r.userId));
+  let selected = ratings;
 
   if (Array.isArray(body?.playerIds)) {
     const requested = (body.playerIds as unknown[])
       .filter((id): id is string => typeof id === "string")
       .filter((id) => memberIds.has(id));
     const requestedSet = new Set(requested);
-    selected = members.rows.filter((m) => requestedSet.has(m.id as string));
+    selected = ratings.filter((r) => requestedSet.has(r.userId));
   }
 
   if (selected.length < teamCount) {
@@ -50,47 +43,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     );
   }
 
-  const skillAverages = await sql`
-    SELECT target_id, skill, AVG(score)::float AS avg_score
-    FROM votes
-    WHERE group_id = ${params.id}
-    GROUP BY target_id, skill
-  `;
-
-  const positionVoteRows = await sql`
-    SELECT target_id, primary_position, secondary_position
-    FROM position_votes
-    WHERE group_id = ${params.id}
-  `;
-
-  const byTarget = new Map<string, Record<string, number>>();
-  for (const row of skillAverages.rows) {
-    const targetId = row.target_id as string;
-    if (!byTarget.has(targetId)) byTarget.set(targetId, {});
-    byTarget.get(targetId)![row.skill as string] = row.avg_score as number;
-  }
-
-  const positions = positionsByTarget(
-    positionVoteRows.rows as {
-      target_id: string;
-      primary_position: string;
-      secondary_position: string;
-    }[]
-  );
-
-  const players = selected.map((m) => {
-    const skills = byTarget.get(m.id) || {};
-    let sum = 0;
-    for (const key of SKILL_KEYS) sum += skills[key] ?? DEFAULT_SCORE;
-    const pos = positions.get(m.id as string);
-    return {
-      userId: m.id as string,
-      name: m.name as string,
-      overall: Math.round((sum / SKILL_KEYS.length) * 10) / 10,
-      primaryPosition: pos?.primary ?? null,
-      secondaryPosition: pos?.secondary ?? null,
-    };
-  });
+  // Eşik altı oyuncular da kendi (az güvenilir) ortalamalarıyla katılır; 75'e düşürülmez.
+  const players = selected.map((r) => ({
+    userId: r.userId,
+    name: r.name,
+    overall: r.overall,
+    primaryPosition: r.primaryPosition,
+    secondaryPosition: r.secondaryPosition,
+  }));
 
   const teams = generateBalancedTeams(players, teamCount);
 
