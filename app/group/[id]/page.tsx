@@ -13,7 +13,13 @@ type Member = {
   nickname: string | null;
   email: string;
 };
-type Group = { id: string; name: string; invite_code: string; owner_id: string };
+type Group = {
+  id: string;
+  name: string;
+  invite_code: string;
+  owner_id: string;
+  ratings_breakdown_public?: boolean;
+};
 type Rating = {
   userId: string;
   name: string;
@@ -34,6 +40,7 @@ export default function GroupPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [isOwner, setIsOwner] = useState(false);
+  const [ratingsBreakdownPublic, setRatingsBreakdownPublic] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -61,6 +68,7 @@ export default function GroupPage() {
       setGroup(groupData.group);
       setMembers(groupData.members);
       setIsOwner(Boolean(groupData.isOwner));
+      setRatingsBreakdownPublic(Boolean(groupData.ratingsBreakdownPublic));
       if (ratingsRes.ok) setRatings(ratingsData.ratings);
     } finally {
       setLoading(false);
@@ -131,6 +139,11 @@ export default function GroupPage() {
       <div className="row" style={{ marginBottom: 20 }}>
         <Link href={`/group/${groupId}/vote`}><button>Oylama Yap</button></Link>
         <Link href={`/group/${groupId}/teams`}><button className="secondary">Takımları Oluştur</button></Link>
+        {(isOwner || ratingsBreakdownPublic) && (
+          <Link href={`/group/${groupId}/breakdown`}>
+            <button className="secondary">Puan Detayları</button>
+          </Link>
+        )}
         <button className="secondary" onClick={() => load(true)} disabled={refreshing}>
           {refreshing ? "Yenileniyor..." : "Listeleri Yenile"}
         </button>

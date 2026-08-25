@@ -18,6 +18,7 @@ export type Group = {
   name: string;
   invite_code: string;
   owner_id: string;
+  ratings_breakdown_public: boolean;
   created_at: string;
 };
 

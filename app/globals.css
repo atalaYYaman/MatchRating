@@ -127,6 +127,35 @@ th, td {
   margin: 0;
 }
 
+.player-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: #fff;
+  color: #1a1a1a;
+  border: none;
+  border-bottom: 1px solid #eee;
+  border-radius: 0;
+  text-align: left;
+  padding: 12px 8px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.player-list-item:last-child {
+  border-bottom: none;
+}
+
+.player-list-item:hover {
+  background: #f5f8ff;
+}
+
+.player-list-item.active {
+  background: #eef2ff;
+  color: #1a1a1a;
+}
+
 .pos-selects {
   display: grid;
   grid-template-columns: 1fr 1fr;

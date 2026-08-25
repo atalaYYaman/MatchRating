@@ -17,7 +17,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   if (!isMember) return NextResponse.json({ error: "Bu takıma erişiminiz yok." }, { status: 403 });
 
   const groupResult = await sql`
-    SELECT id, name, invite_code, owner_id, created_at FROM groups WHERE id = ${params.id}
+    SELECT id, name, invite_code, owner_id, ratings_breakdown_public, created_at
+    FROM groups WHERE id = ${params.id}
   `;
   const group = groupResult.rows[0];
   if (!group) return NextResponse.json({ error: "Takım bulunamadı." }, { status: 404 });
@@ -39,5 +40,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     group,
     members: membersResult.rows,
     isOwner: group.owner_id === session.userId,
+    ratingsBreakdownPublic:
+      group.ratings_breakdown_public === true || group.ratings_breakdown_public === "t",
   });
 }
