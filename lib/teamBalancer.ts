@@ -1,7 +1,7 @@
 export type RatedPlayer = {
   userId: string;
   name: string;
-  overall: number; // 1-10 arasi ortalama puan
+  overall: number; // 60-90 arasi ortalama puan
 };
 
 export type Team = {

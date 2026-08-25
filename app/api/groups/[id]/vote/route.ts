@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { SKILL_KEYS } from "@/lib/skills";
+import { isValidScore, MIN_SCORE, MAX_SCORE } from "@/lib/scoring";
 
 async function assertMember(groupId: string, userId: string) {
   const result = await sql`
@@ -50,9 +51,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   for (const key of SKILL_KEYS) {
     const raw = scores[key];
     const value = Number(raw);
-    if (!Number.isFinite(value) || value < 1 || value > 10) {
+    if (!isValidScore(value)) {
       return NextResponse.json(
-        { error: `Geçersiz puan (${key}). 1-10 arası olmalı.` },
+        { error: `Geçersiz puan (${key}). ${MIN_SCORE}-${MAX_SCORE} arası olmalı.` },
         { status: 400 }
       );
     }

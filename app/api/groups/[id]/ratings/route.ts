@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { SKILL_KEYS } from "@/lib/skills";
+import { DEFAULT_SCORE } from "@/lib/scoring";
 
 async function assertMember(groupId: string, userId: string) {
   const result = await sql`
@@ -40,8 +41,6 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     byTarget.get(targetId)![row.skill as string] = row.avg_score as number;
     voteCounts.set(targetId, Math.max(voteCounts.get(targetId) || 0, row.vote_count as number));
   }
-
-  const DEFAULT_SCORE = 5; // hic oy almamis oyuncu icin notr baslangic puani
 
   const ratings = members.rows.map((m) => {
     const skills = byTarget.get(m.id) || {};

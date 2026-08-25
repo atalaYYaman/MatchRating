@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { SKILL_KEYS } from "@/lib/skills";
+import { DEFAULT_SCORE } from "@/lib/scoring";
 import { generateBalancedTeams } from "@/lib/teamBalancer";
 
 async function assertMember(groupId: string, userId: string) {
@@ -11,7 +12,7 @@ async function assertMember(groupId: string, userId: string) {
   return result.rows.length > 0;
 }
 
-// POST: { teamCount: number } -> rastgele + dengeli takim listesi dondurur (kaydetmez)
+// POST: { teamCount: number, playerIds?: string[] } -> rastgele + dengeli takim listesi dondurur (kaydetmez)
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
@@ -30,9 +31,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     WHERE gm.group_id = ${params.id}
   `;
 
-  if (members.rows.length < teamCount) {
+  const memberIds = new Set(members.rows.map((m) => m.id as string));
+  let selected = members.rows;
+
+  if (Array.isArray(body?.playerIds)) {
+    const requested = (body.playerIds as unknown[])
+      .filter((id): id is string => typeof id === "string")
+      .filter((id) => memberIds.has(id));
+    const requestedSet = new Set(requested);
+    selected = members.rows.filter((m) => requestedSet.has(m.id as string));
+  }
+
+  if (selected.length < teamCount) {
     return NextResponse.json(
-      { error: `Takım sayısı, üye sayısından (${members.rows.length}) fazla olamaz.` },
+      { error: `Takım sayısı, seçilen oyuncu sayısından (${selected.length}) fazla olamaz.` },
       { status: 400 }
     );
   }
@@ -51,8 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     byTarget.get(targetId)![row.skill as string] = row.avg_score as number;
   }
 
-  const DEFAULT_SCORE = 5;
-  const players = members.rows.map((m) => {
+  const players = selected.map((m) => {
     const skills = byTarget.get(m.id) || {};
     let sum = 0;
     for (const key of SKILL_KEYS) sum += skills[key] ?? DEFAULT_SCORE;

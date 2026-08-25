@@ -108,6 +108,25 @@ th, td {
   margin-bottom: 12px;
 }
 
+.player-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.player-pick:last-child {
+  border-bottom: none;
+}
+
+.player-pick input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
 nav.top {
   display: flex;
   justify-content: space-between;

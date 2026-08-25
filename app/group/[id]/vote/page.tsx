@@ -4,6 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { SKILLS, SkillKey } from "@/lib/skills";
+import { DEFAULT_SCORE, MAX_SCORE, MIN_SCORE } from "@/lib/scoring";
+
+const DEFAULT_SCORES: Record<SkillKey, number> = {
+  sut: DEFAULT_SCORE,
+  pas: DEFAULT_SCORE,
+  dribling: DEFAULT_SCORE,
+  hiz: DEFAULT_SCORE,
+  fizik: DEFAULT_SCORE,
+  defans: DEFAULT_SCORE,
+};
 
 type Member = { id: string; name: string; email: string };
 
@@ -17,9 +27,7 @@ export default function VotePage() {
   const [meId, setMeId] = useState<string | null>(null);
   const [votedTargets, setVotedTargets] = useState<Set<string>>(new Set());
   const [activeTarget, setActiveTarget] = useState<string | null>(null);
-  const [scores, setScores] = useState<Record<SkillKey, number>>({
-    sut: 5, pas: 5, dribling: 5, hiz: 5, fizik: 5, defans: 5,
-  });
+  const [scores, setScores] = useState<Record<SkillKey, number>>({ ...DEFAULT_SCORES });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -68,7 +76,7 @@ export default function VotePage() {
 
   function openVoteFor(targetId: string) {
     setActiveTarget(targetId);
-    setScores({ sut: 5, pas: 5, dribling: 5, hiz: 5, fizik: 5, defans: 5 });
+    setScores({ ...DEFAULT_SCORES });
     setMessage(null);
     setError(null);
   }
@@ -103,7 +111,7 @@ export default function VotePage() {
     <div>
       <p><Link href={`/group/${groupId}`}>← Takıma dön</Link></p>
       <h1>Oylama</h1>
-      <p>Takım arkadaşlarını 6 yetenek üzerinden 1-10 arası puanla.</p>
+      <p>Takım arkadaşlarını 6 yetenek üzerinden {MIN_SCORE}-{MAX_SCORE} arası puanla.</p>
       {message && <p style={{ color: "green" }}>{message}</p>}
 
       {teammates.length === 0 && <p>Oylayacağın başka üye yok.</p>}
@@ -128,13 +136,18 @@ export default function VotePage() {
                   </label>
                   <input
                     type="range"
-                    min={1}
-                    max={10}
+                    min={MIN_SCORE}
+                    max={MAX_SCORE}
+                    step={1}
                     value={scores[s.key]}
                     onChange={(e) =>
                       setScores((prev) => ({ ...prev, [s.key]: Number(e.target.value) }))
                     }
                   />
+                  <div className="row" style={{ justifyContent: "space-between", color: "#888", fontSize: 12 }}>
+                    <span>{MIN_SCORE}</span>
+                    <span>{MAX_SCORE}</span>
+                  </div>
                 </div>
               ))}
               {error && <p className="error">{error}</p>}
