@@ -1,13 +1,20 @@
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from "react-native";
-import { Button, Card, ErrorText, Screen } from "../../../../components/ui";
+import {
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { Button, Card, ErrorText, Field, Screen } from "../../../../components/ui";
 import { api, ApiError } from "../../../../lib/api";
 import { positionLabel } from "../../../../lib/constants";
 import { colors } from "../../../../lib/theme";
 
 type Group = { id: string; name: string; invite_code: string; owner_id: string };
-type Member = { id: string; name: string; email: string };
+type Member = { id: string; name: string; account_name: string; email: string; nickname: string | null };
 type Rating = {
   userId: string;
   name: string;
@@ -27,6 +34,10 @@ export default function GroupScreen() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editNickname, setEditNickname] = useState("");
+  const [savingMember, setSavingMember] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -54,6 +65,44 @@ export default function GroupScreen() {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  async function saveNickname(userId: string) {
+    setSavingMember(true);
+    setActionError(null);
+    try {
+      await api.patch(`/api/groups/${id}/members/${userId}`, { nickname: editNickname });
+      setEditingId(null);
+      await load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Takma ad kaydedilemedi.");
+    } finally {
+      setSavingMember(false);
+    }
+  }
+
+  function confirmRemoveMember(member: Member) {
+    Alert.alert(
+      "Üyeyi çıkar",
+      `${member.name} gruptan çıkarılsın mı? Oyları da silinir.`,
+      [
+        { text: "Vazgeç", style: "cancel" },
+        { text: "Çıkar", style: "destructive", onPress: () => removeMember(member) },
+      ]
+    );
+  }
+
+  async function removeMember(member: Member) {
+    setSavingMember(true);
+    setActionError(null);
+    try {
+      await api.delete(`/api/groups/${id}/members/${member.id}`);
+      await load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Üye çıkarılamadı.");
+    } finally {
+      setSavingMember(false);
+    }
   }
 
   const ratingByUser = new Map(ratings.map((r) => [r.userId, r]));
@@ -103,6 +152,7 @@ export default function GroupScreen() {
         <Text style={{ fontWeight: "700", marginBottom: 8, color: colors.text }}>
           Üyeler ({members.length})
         </Text>
+        <ErrorText>{actionError}</ErrorText>
         {loading && (
           <View style={{ paddingVertical: 20 }}>
             <ActivityIndicator color={colors.primary} />
@@ -110,16 +160,95 @@ export default function GroupScreen() {
         )}
         {members.map((m) => {
           const r = ratingByUser.get(m.id);
+          const isGroupOwner = group ? m.id === group.owner_id : false;
+          const editing = editingId === m.id;
           return (
             <Card key={m.id}>
-              <Text style={{ fontWeight: "600", color: colors.text }}>{m.name}</Text>
-              <Text style={{ color: colors.muted, marginTop: 2 }}>
-                {r?.hasVotes
-                  ? `Güç: ${r.overall} · ${positionLabel(r.primaryPosition)} / ${positionLabel(
-                      r.secondaryPosition
-                    )} · ${r.voteCount} oy`
-                  : "Henüz oy almadı"}
-              </Text>
+              {editing ? (
+                <View>
+                  <Field
+                    value={editNickname}
+                    onChangeText={setEditNickname}
+                    placeholder={m.account_name || m.name}
+                    maxLength={40}
+                    editable={!savingMember}
+                  />
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Button
+                        title="Kaydet"
+                        onPress={() => saveNickname(m.id)}
+                        loading={savingMember}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Button
+                        title="İptal"
+                        variant="secondary"
+                        onPress={() => setEditingId(null)}
+                        disabled={savingMember}
+                      />
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <View>
+                  <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}>
+                    <Text style={{ fontWeight: "600", color: colors.text }}>{m.name}</Text>
+                    {isGroupOwner && (
+                      <Text
+                        style={{
+                          marginLeft: 6,
+                          fontSize: 11,
+                          color: colors.primary,
+                          fontWeight: "700",
+                        }}
+                      >
+                        YÖNETİCİ
+                      </Text>
+                    )}
+                  </View>
+                  {m.nickname && m.account_name && m.nickname !== m.account_name && (
+                    <Text style={{ color: colors.muted, fontSize: 12 }}>
+                      ({m.account_name})
+                    </Text>
+                  )}
+                  <Text style={{ color: colors.muted, marginTop: 2 }}>
+                    {r?.hasVotes
+                      ? `Güç: ${r.overall} · ${positionLabel(r.primaryPosition)} / ${positionLabel(
+                          r.secondaryPosition
+                        )} · ${r.voteCount} oy`
+                      : "Henüz oy almadı"}
+                  </Text>
+
+                  {isOwner && (
+                    <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                      <View style={{ flex: 1 }}>
+                        <Button
+                          title="Takma ad"
+                          variant="secondary"
+                          onPress={() => {
+                            setEditingId(m.id);
+                            setEditNickname(m.nickname || m.name);
+                            setActionError(null);
+                          }}
+                          disabled={savingMember}
+                        />
+                      </View>
+                      {!isGroupOwner && (
+                        <View style={{ flex: 1 }}>
+                          <Button
+                            title="Çıkar"
+                            variant="danger"
+                            onPress={() => confirmRemoveMember(m)}
+                            disabled={savingMember}
+                          />
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </View>
+              )}
             </Card>
           );
         })}
