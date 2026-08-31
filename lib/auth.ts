@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 // Bu dosya middleware.ts (Edge Runtime) tarafindan da kullanildigi icin
 // sadece Edge-uyumlu kutuphaneler (jose) icerir. Sifre hash'leme icin
@@ -57,9 +57,21 @@ export async function clearSessionCookie() {
   store.delete(COOKIE_NAME);
 }
 
+// Web tarafi httpOnly cookie kullanir. Mobil (React Native) istemci cookie
+// yonetemedigi icin token'i "Authorization: Bearer <token>" header'inda
+// gonderir; ikisi de burada kabul edilir.
 export async function getSession(): Promise<SessionPayload | null> {
   const store = await cookies();
-  const token = store.get(COOKIE_NAME)?.value;
+  let token = store.get(COOKIE_NAME)?.value;
+
+  if (!token) {
+    const hdrs = await headers();
+    const authHeader = hdrs.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.slice(7);
+    }
+  }
+
   if (!token) return null;
   return verifySessionToken(token);
 }

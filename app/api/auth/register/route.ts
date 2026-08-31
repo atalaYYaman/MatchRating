@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     });
     await setSessionCookie(token);
 
-    return NextResponse.json({ user });
+    return NextResponse.json({ user, token });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Kayıt sırasında hata oluştu." }, { status: 500 });

@@ -36,6 +36,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       user: { id: user.id, name: user.name, email: user.email },
+      // Mobil istemci cookie kullanamadigi icin token'i da body'de aliyor.
+      token,
     });
   } catch (err) {
     console.error(err);

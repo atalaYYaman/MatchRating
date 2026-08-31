@@ -17,10 +17,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
 
-  const isMember = await assertMember(params.id, session.userId);
-  if (!isMember) return NextResponse.json({ error: "Bu takıma erişiminiz yok." }, { status: 403 });
-
-  const [votes, positionVotes] = await Promise.all([
+  const [isMember, votes, positionVotes] = await Promise.all([
+    assertMember(params.id, session.userId),
     sql`
       SELECT target_id, skill, score FROM votes
       WHERE group_id = ${params.id} AND voter_id = ${session.userId}
@@ -30,6 +28,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       WHERE group_id = ${params.id} AND voter_id = ${session.userId}
     `,
   ]);
+  if (!isMember) return NextResponse.json({ error: "Bu takıma erişiminiz yok." }, { status: 403 });
 
   return NextResponse.json({
     votes: votes.rows,

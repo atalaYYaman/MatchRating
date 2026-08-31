@@ -18,12 +18,12 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
 
-  const isMember = await assertMember(params.id, session.userId);
+  const [isMember, groupResult] = await Promise.all([
+    assertMember(params.id, session.userId),
+    sql`SELECT owner_id, ratings_breakdown_public FROM groups WHERE id = ${params.id}`,
+  ]);
   if (!isMember) return NextResponse.json({ error: "Bu takıma erişiminiz yok." }, { status: 403 });
 
-  const groupResult = await sql`
-    SELECT owner_id, ratings_breakdown_public FROM groups WHERE id = ${params.id}
-  `;
   const group = groupResult.rows[0];
   if (!group) return NextResponse.json({ error: "Takım bulunamadı." }, { status: 404 });
 

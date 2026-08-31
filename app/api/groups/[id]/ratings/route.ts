@@ -14,9 +14,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
 
-  const isMember = await assertMember(params.id, session.userId);
+  const [isMember, ratings] = await Promise.all([
+    assertMember(params.id, session.userId),
+    computeGroupRatings(params.id),
+  ]);
   if (!isMember) return NextResponse.json({ error: "Bu takıma erişiminiz yok." }, { status: 403 });
 
-  const ratings = await computeGroupRatings(params.id);
   return NextResponse.json({ ratings });
 }
