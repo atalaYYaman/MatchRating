@@ -2,8 +2,12 @@
   "expo": {
     "name": "MatchRating",
     "slug": "matchrating",
+    "owner": "atq7",
     "scheme": "matchrating",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -26,6 +30,14 @@
     "plugins": [
       "expo-router",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c9e75d52-6a6e-405c-998a-21ce3b736d47"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/c9e75d52-6a6e-405c-998a-21ce3b736d47"
+    }
   }
 }
