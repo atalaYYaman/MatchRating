@@ -1,69 +1,191 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap');
+
+/* MatchRating tasarim sistemi — token'lar mobil taraftaki lib/theme.ts ile
+   ayni kaynaktan (Claude Design projesi) geliyor.
+   Kimlik: "mac gunu programi / stadyum bileti". Derinlik golgeyle degil,
+   1px ink tonlu hairline kenarlikla ifade edilir. */
+:root {
+  /* Marka */
+  --pitch-900: #12321F;
+  --pitch-700: #1A4C34;
+  --pitch: #1F5C3F;
+  --pitch-500: #256E4C;
+  --pitch-300: #4B8F6C;
+  --pitch-100: #DCEAE1;
+
+  --chalk: #F5F3EC;
+  --chalk-100: #FBFAF6;
+  --chalk-200: #EFEBE0;
+  --chalk-300: #E4DECE;
+
+  --ink: #16231C;
+  --ink-700: #33413A;
+  --ink-500: #5B6660;
+  --ink-300: #8B948E;
+  --ink-100: #C7CCC7;
+
+  --amber: #E8A33D;
+  --amber-700: #C27E23;
+  --amber-100: #FBE7C6;
+
+  --brick: #B14A3B;
+  --brick-100: #F3DCD6;
+
+  /* Anlamsal */
+  --surface-page: var(--chalk);
+  --surface-card: var(--chalk-100);
+  --surface-card-raised: #FFFFFF;
+  --surface-sunken: var(--chalk-200);
+
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-500);
+  --text-tertiary: var(--ink-300);
+  --text-on-brand: var(--chalk-100);
+  --text-link: var(--pitch);
+
+  --border-default: var(--ink-100);
+  --border-strong: var(--ink-300);
+
+  --state-danger: var(--brick);
+
+  /* Tipografi: Archivo skorbord/baslik, Public Sans govde */
+  --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --tracking-label: 0.06em;
+
+  /* 4px tabanli olcek */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+
+  --radius-card: 14px;
+  --radius-button: 10px;
+  --radius-input: 10px;
+  --radius-pill: 999px;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background: #f4f6f8;
-  color: #1a1a1a;
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  background: var(--surface-page);
+  color: var(--text-primary);
 }
 
 .container {
   max-width: 720px;
   margin: 0 auto;
-  padding: 24px 16px 64px;
+  padding: var(--space-6) var(--space-4) 64px;
 }
 
 h1, h2, h3 {
-  line-height: 1.25;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ink);
 }
+
+h1 { font-size: 28px; }
+h2 { font-size: 22px; }
+h3 { font-size: 18px; }
 
 a {
-  color: #1a73e8;
+  color: var(--text-link);
+  text-decoration: none;
 }
 
+a:hover {
+  color: var(--pitch-700);
+  text-decoration: underline;
+}
+
+/* Kart: sistemin tek tekrar eden kapsayici motifi. Golge yok. */
 .card {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
-input, select, button {
+input, select, textarea {
+  font-family: var(--font-body);
   font-size: 15px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  color: var(--text-primary);
+  background: var(--surface-card-raised);
+  padding: 10px 14px;
+  border-radius: var(--radius-input);
+  border: 1px solid var(--border-default);
+  outline: none;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--pitch);
+  box-shadow: 0 0 0 3px var(--pitch-100);
 }
 
 button {
-  background: #1a73e8;
-  color: #fff;
-  border: none;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 15px;
+  background: var(--pitch);
+  color: var(--text-on-brand);
+  border: 1px solid var(--pitch);
+  border-radius: var(--radius-button);
   cursor: pointer;
-  padding: 8px 16px;
+  padding: 12px 20px;
+  transition: filter 120ms ease, transform 80ms ease;
+}
+
+/* Hover'da acilmaz, bir ton koyulasir; basiliyken hafif kuculur. */
+button:hover:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 button:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
 button.secondary {
-  background: #fff;
-  color: #1a73e8;
-  border: 1px solid #1a73e8;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  border-color: var(--border-default);
 }
 
 button.danger {
-  background: #d33;
+  background: var(--brick);
+  border-color: var(--brick);
+  color: var(--text-on-brand);
+}
+
+button.accent {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: var(--ink);
+}
+
+button.small {
+  font-size: 13px;
+  padding: 8px 14px;
 }
 
 .row {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   flex-wrap: wrap;
   align-items: center;
 }
@@ -71,13 +193,22 @@ button.danger {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: var(--space-3);
+}
+
+.field label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
 
 .error {
-  color: #d33;
-  font-size: 14px;
+  color: var(--state-danger);
+  font-size: 13px;
 }
 
 table {
@@ -85,35 +216,61 @@ table {
   border-collapse: collapse;
 }
 
+th {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
 th, td {
   text-align: left;
-  padding: 6px 8px;
-  border-bottom: 1px solid #eee;
+  padding: 8px;
+  border-bottom: 1px solid var(--border-default);
   font-size: 14px;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+/* Sayisal degerler skorbord tipografisiyle */
+td strong {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--pitch-900);
 }
 
 .pill {
   display: inline-block;
-  background: #eef2ff;
-  color: #3346c7;
-  border-radius: 999px;
-  padding: 2px 10px;
-  font-size: 13px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  background: var(--chalk-200);
+  color: var(--ink-500);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
 }
 
 .team-box {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  background: var(--surface-card-raised);
 }
 
 .player-pick {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid #eee;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-default);
   cursor: pointer;
 }
 
@@ -125,22 +282,24 @@ th, td {
   width: 16px;
   height: 16px;
   margin: 0;
+  padding: 0;
   flex-shrink: 0;
+  accent-color: var(--pitch);
 }
 
 .player-pick-main {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   flex: 1;
   min-width: 0;
   cursor: pointer;
 }
 
 .guest-form {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-default);
 }
 
 .player-list-item {
@@ -148,13 +307,14 @@ th, td {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  background: #fff;
-  color: #1a1a1a;
+  background: var(--surface-card-raised);
+  color: var(--text-primary);
+  font-weight: 400;
   border: none;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-default);
   border-radius: 0;
   text-align: left;
-  padding: 12px 8px;
+  padding: var(--space-3) var(--space-2);
   margin: 0;
   cursor: pointer;
 }
@@ -164,55 +324,68 @@ th, td {
 }
 
 .player-list-item:hover {
-  background: #f5f8ff;
+  background: var(--chalk-100);
+  filter: none;
 }
 
 .player-list-item.active {
-  background: #eef2ff;
-  color: #1a1a1a;
+  background: var(--pitch-100);
+  color: var(--text-primary);
 }
 
 .pos-selects {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .pos-summary {
-  margin: 0 0 8px;
-  color: #555;
-  font-size: 13px;
-}
-
-button.small {
-  padding: 4px 10px;
+  margin: 0 0 var(--space-2);
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
 .collapse-toggle {
   background: none;
   border: none;
-  color: #1a1a1a;
+  color: var(--ink);
   padding: 0;
-  margin: 0 0 12px;
+  margin: 0 0 var(--space-3);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 1.17em;
-  font-weight: bold;
-  font-family: inherit;
-  line-height: 1.25;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.15;
   text-align: left;
 }
 
 .collapse-toggle:hover {
-  color: #1a73e8;
+  color: var(--pitch);
+  filter: none;
+}
+
+.collapse-toggle:active {
+  transform: none;
 }
 
 nav.top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--space-5);
+}
+
+/* Yetenek oylamasindaki 60-90 slider'i */
+input[type="range"] {
+  padding: 0;
+  border: none;
+  background: transparent;
+  accent-color: var(--pitch);
+}
+
+input[type="range"]:focus {
+  box-shadow: none;
 }
