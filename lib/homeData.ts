@@ -10,6 +10,9 @@ import { maybeProcessMatchRatings, RATING_DEADLINE_HOURS } from "@/lib/matchRati
 
 const AVATAR_LIMIT = 6;
 const RECENT_RESULTS = 5;
+// "Tüm takımlar" gorunumunde birden fazla takimda yaklasan mac olabilir;
+// ana sayfa bunlarin hepsini gosterir (kalani Maclar sekmesinde).
+const UPCOMING_LIMIT = 3;
 
 export type HomeScope = { userId: string; groupId?: string | null };
 
@@ -33,8 +36,10 @@ export async function buildHomeData({ userId, groupId }: HomeScope) {
       JOIN group_members gm ON gm.group_id = m.group_id AND gm.user_id = ${userId}
       WHERE m.status = 'scheduled' AND m.scheduled_at > now()
         AND (${scoped}::uuid IS NULL OR m.group_id = ${scoped}::uuid)
-      ORDER BY m.scheduled_at ASC
-      LIMIT 1
+      -- Ayni saate denk gelen maclarda siralama takim adiyla belirlenir,
+      -- boylece hangisinin ustte cikacagi rastgele degil.
+      ORDER BY m.scheduled_at ASC, g.name ASC
+      LIMIT ${UPCOMING_LIMIT}
     `,
     sql`
       SELECT m.id, m.group_id, g.name AS group_name, m.scheduled_at, m.match_kind,
@@ -65,7 +70,7 @@ export async function buildHomeData({ userId, groupId }: HomeScope) {
     return null; // Kapsamda takim yok (uye degil ya da hic takimi yok)
   }
 
-  const nextMatch = nextRes.rows[0] ?? null;
+  const upcoming = nextRes.rows;
   const lastMatch = lastRes.rows[0] ?? null;
 
   // Son mac oynanmis ama islenmemisse burada isle (cron yok).
@@ -74,15 +79,16 @@ export async function buildHomeData({ userId, groupId }: HomeScope) {
   }
 
   const [nextAttendanceRes, lastRatingsRes, lastAttendanceRes] = await Promise.all([
-    nextMatch
+    upcoming.length > 0
       ? sql`
-          SELECT a.user_id, a.status,
+          SELECT a.match_id, a.user_id, a.status,
                  COALESCE(NULLIF(BTRIM(gm.nickname), ''), u.name) AS name
           FROM match_attendance a
           JOIN users u ON u.id = a.user_id
+          JOIN matches m ON m.id = a.match_id
           LEFT JOIN group_members gm
-            ON gm.group_id = ${nextMatch.group_id} AND gm.user_id = a.user_id
-          WHERE a.match_id = ${nextMatch.id}
+            ON gm.group_id = m.group_id AND gm.user_id = a.user_id
+          WHERE a.match_id = ANY(${`{${upcoming.map((m) => m.id).join(",")}}`}::uuid[])
         `
       : Promise.resolve({ rows: [] as Record<string, unknown>[] }),
     lastMatch
@@ -106,25 +112,25 @@ export async function buildHomeData({ userId, groupId }: HomeScope) {
       : Promise.resolve({ rows: [] as Record<string, unknown>[] }),
   ]);
 
-  // --- Siradaki mac
-  const attending = nextAttendanceRes.rows.filter((a) => a.status === "yes");
-  const nextPayload = nextMatch
-    ? {
-        id: nextMatch.id,
-        groupId: nextMatch.group_id,
-        groupName: nextMatch.group_name,
-        scheduledAt: nextMatch.scheduled_at,
-        location: nextMatch.location,
-        matchKind: nextMatch.match_kind,
-        format: matchFormat(nextMatch.required_players as number | null),
-        requiredPlayers: nextMatch.required_players,
-        rsvpDeadline: nextMatch.rsvp_deadline,
-        attendingCount: attending.length,
-        attendingNames: attending.slice(0, AVATAR_LIMIT).map((a) => a.name),
-        myAttendance:
-          nextAttendanceRes.rows.find((a) => a.user_id === userId)?.status ?? null,
-      }
-    : null;
+  // --- Yaklasan maclar
+  const upcomingPayload = upcoming.map((match) => {
+    const rows = nextAttendanceRes.rows.filter((a) => a.match_id === match.id);
+    const attending = rows.filter((a) => a.status === "yes");
+    return {
+      id: match.id,
+      groupId: match.group_id,
+      groupName: match.group_name,
+      scheduledAt: match.scheduled_at,
+      location: match.location,
+      matchKind: match.match_kind,
+      format: matchFormat(match.required_players as number | null),
+      requiredPlayers: match.required_players,
+      rsvpDeadline: match.rsvp_deadline,
+      attendingCount: attending.length,
+      attendingNames: attending.slice(0, AVATAR_LIMIT).map((a) => a.name),
+      myAttendance: rows.find((a) => a.user_id === userId)?.status ?? null,
+    };
+  });
 
   // --- Bu ayin istatistikleri ('ic' maclar sayilir ama galibiyete girmez)
   let wins = 0;
@@ -223,7 +229,9 @@ export async function buildHomeData({ userId, groupId }: HomeScope) {
       : null,
     groupCount: membershipRes.rows.length,
     isOwner: scopedGroup ? scopedGroup.owner_id === userId : false,
-    nextMatch: nextPayload,
+    upcomingMatches: upcomingPayload,
+    // Yayindaki eski mobil surumler tek bir nextMatch bekliyor.
+    nextMatch: upcomingPayload[0] ?? null,
     monthStats: {
       played: monthRes.rows.length,
       wins,

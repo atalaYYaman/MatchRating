@@ -23,24 +23,26 @@ import {
 } from "../../../lib/format";
 import { border, colors, radius, space, type } from "../../../lib/theme";
 
+type UpcomingMatch = {
+  id: string;
+  groupId: string;
+  groupName: string;
+  scheduledAt: string;
+  location: string | null;
+  matchKind: string;
+  format: string | null;
+  requiredPlayers: number | null;
+  attendingCount: number;
+  attendingNames: string[];
+  myAttendance: "yes" | "no" | null;
+};
+
 type HomeData = {
   scope: "all" | "group";
   group: { id: string; name: string; inviteCode: string } | null;
   groupCount: number;
   isOwner: boolean;
-  nextMatch: {
-    id: string;
-    groupId: string;
-    groupName: string;
-    scheduledAt: string;
-    location: string | null;
-    matchKind: string;
-    format: string | null;
-    requiredPlayers: number | null;
-    attendingCount: number;
-    attendingNames: string[];
-    myAttendance: "yes" | "no" | null;
-  } | null;
+  upcomingMatches: UpcomingMatch[];
   monthStats: {
     played: number;
     wins: number;
@@ -74,7 +76,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [rsvpBusy, setRsvpBusy] = useState(false);
+  const [busyMatchId, setBusyMatchId] = useState<string | null>(null);
 
   // Kapsam degistiginde onceki istek hala ucuyor olabilir; gec donen eski
   // yanit yenisini ezmesin diye istegin kapsami ile guncel kapsam karsilastirilir.
@@ -109,20 +111,19 @@ export default function HomeScreen() {
     setRefreshing(false);
   }
 
-  async function setAttendance(status: "yes" | "no") {
-    if (!data?.nextMatch) return;
-    setRsvpBusy(true);
+  async function setAttendance(match: UpcomingMatch, status: "yes" | "no") {
+    setBusyMatchId(match.id);
     try {
       // Mac kendi takimina ait; "tum takimlar" gorunumunde de dogru adrese gider.
       await api.post(
-        `/api/groups/${data.nextMatch.groupId}/matches/${data.nextMatch.id}/attendance`,
+        `/api/groups/${match.groupId}/matches/${match.id}/attendance`,
         { status }
       );
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Yoklama kaydedilemedi.");
     } finally {
-      setRsvpBusy(false);
+      setBusyMatchId(null);
     }
   }
 
@@ -154,14 +155,9 @@ export default function HomeScreen() {
     );
   }
 
-  const next = data?.nextMatch ?? null;
+  const upcoming = data?.upcomingMatches ?? [];
   const stats = data?.monthStats;
   const last = data?.lastMatch ?? null;
-  const capacity = next?.requiredPlayers ?? null;
-  const fillPct =
-    capacity && capacity > 0
-      ? Math.min(100, Math.round((next!.attendingCount / capacity) * 100))
-      : 0;
 
   return (
     <ScrollView
@@ -186,101 +182,17 @@ export default function HomeScreen() {
 
       <ErrorText>{error}</ErrorText>
 
-      {/* SIRADAKI MAC — bilet düzeni */}
-      {next ? (
-        <View style={s.ticket}>
-          <View style={s.ticketHead}>
-            <Text style={s.eyebrow}>
-              {isAll ? `SIRADAKİ · ${next.groupName}` : "SIRADAKİ MAÇ"}
-            </Text>
-            <Badge tone="brand">{countdownLabel(next.scheduledAt)}</Badge>
-          </View>
-
-          <View style={s.scoreRow}>
-            <View style={s.scoreCell}>
-              <Text style={s.scoreValue}>{dayNumber(next.scheduledAt)}</Text>
-              <Text style={s.eyebrow}>{monthAndDay(next.scheduledAt)}</Text>
-            </View>
-            <View style={[s.scoreCell, s.scoreCellMiddle]}>
-              <Text style={s.scoreValue}>{clockTime(next.scheduledAt)}</Text>
-              <Text style={s.eyebrow}>BAŞLAMA</Text>
-            </View>
-            <View style={s.scoreCell}>
-              <Text style={s.scoreValue}>
-                {next.format ?? (next.matchKind === "ic" ? "İÇ" : "DIŞ")}
-              </Text>
-              <Text style={s.eyebrow}>FORMAT</Text>
-            </View>
-          </View>
-
-          {next.location ? (
-            <View style={s.locationRow}>
-              <Text style={[type.bodyMMedium, { color: colors.ink }]}>
-                {next.location}
-              </Text>
-              <Text style={[type.bodyS, { color: colors.textSecondary }]}>
-                {next.matchKind === "ic" ? "Takım içi maç" : "Dış rakip"}
-              </Text>
-            </View>
-          ) : null}
-
-          <View style={s.squadBlock}>
-            <View style={s.squadHead}>
-              <Text style={s.eyebrow}>KADRO</Text>
-              <View style={{ flexDirection: "row", alignItems: "baseline", gap: 5 }}>
-                <Text style={[type.scoreS, { color: colors.ink }]}>
-                  {next.attendingCount}
-                  {capacity ? `/${capacity}` : ""}
-                </Text>
-                <Text style={s.eyebrow}>KATILIYOR</Text>
-              </View>
-            </View>
-
-            {next.attendingNames.length > 0 && (
-              <Text style={[type.bodyS, { color: colors.textSecondary }]}>
-                {next.attendingNames.join(", ")}
-                {next.attendingCount > next.attendingNames.length
-                  ? ` +${next.attendingCount - next.attendingNames.length}`
-                  : ""}
-              </Text>
-            )}
-
-            {capacity ? (
-              <View style={s.progressTrack}>
-                <View style={[s.progressFill, { width: `${fillPct}%` }]} />
-              </View>
-            ) : null}
-          </View>
-
-          <View style={s.ctaBlock}>
-            {next.myAttendance === "yes" ? (
-              <>
-                <Button
-                  title="✓ Katılıyorsun · Vazgeç"
-                  variant="secondary"
-                  loading={rsvpBusy}
-                  onPress={() => setAttendance("no")}
-                />
-                <Text style={s.ctaHelper}>
-                  Kadroda {next.attendingCount}. sıradasın.
-                </Text>
-              </>
-            ) : (
-              <>
-                <Button
-                  title={next.myAttendance === "no" ? "Fikrimi değiştirdim" : "Katılıyorum"}
-                  loading={rsvpBusy}
-                  onPress={() => setAttendance("yes")}
-                />
-                <Text style={s.ctaHelper}>
-                  {next.myAttendance === "no"
-                    ? "Şu an katılmıyor görünüyorsun."
-                    : "Yoklama maç saatine kadar açık."}
-                </Text>
-              </>
-            )}
-          </View>
-        </View>
+      {/* Yaklasan maclar — birden fazla takimda mac varsa hepsi listelenir */}
+      {upcoming.length > 0 ? (
+        upcoming.map((match) => (
+          <MatchTicket
+            key={match.id}
+            match={match}
+            showTeam={isAll}
+            busy={busyMatchId === match.id}
+            onAttend={(status) => setAttendance(match, status)}
+          />
+        ))
       ) : (
         <Card>
           <Text style={s.eyebrow}>SIRADAKİ MAÇ</Text>
@@ -402,6 +314,122 @@ export default function HomeScreen() {
         </View>
       )}
     </ScrollView>
+  );
+}
+
+// Bilet duzenindeki mac karti. Her yaklasan mac icin bir kez cizilir; boylece
+// ayni anda birden fazla takimda maci olan oyuncu hepsine yoklama verebilir.
+function MatchTicket({
+  match,
+  showTeam,
+  busy,
+  onAttend,
+}: {
+  match: UpcomingMatch;
+  showTeam: boolean;
+  busy: boolean;
+  onAttend: (status: "yes" | "no") => void;
+}) {
+  const capacity = match.requiredPlayers;
+  const fillPct =
+    capacity && capacity > 0
+      ? Math.min(100, Math.round((match.attendingCount / capacity) * 100))
+      : 0;
+
+  return (
+    <View style={s.ticket}>
+      <View style={s.ticketHead}>
+        <Text style={s.eyebrow}>
+          {showTeam ? `SIRADAKİ · ${match.groupName}` : "SIRADAKİ MAÇ"}
+        </Text>
+        <Badge tone="brand">{countdownLabel(match.scheduledAt)}</Badge>
+      </View>
+
+      <View style={s.scoreRow}>
+        <View style={s.scoreCell}>
+          <Text style={s.scoreValue}>{dayNumber(match.scheduledAt)}</Text>
+          <Text style={s.eyebrow}>{monthAndDay(match.scheduledAt)}</Text>
+        </View>
+        <View style={[s.scoreCell, s.scoreCellMiddle]}>
+          <Text style={s.scoreValue}>{clockTime(match.scheduledAt)}</Text>
+          <Text style={s.eyebrow}>BAŞLAMA</Text>
+        </View>
+        <View style={s.scoreCell}>
+          <Text style={s.scoreValue}>
+            {match.format ?? (match.matchKind === "ic" ? "İÇ" : "DIŞ")}
+          </Text>
+          <Text style={s.eyebrow}>FORMAT</Text>
+        </View>
+      </View>
+
+      {match.location ? (
+        <View style={s.locationRow}>
+          <Text style={[type.bodyMMedium, { color: colors.ink }]}>
+            {match.location}
+          </Text>
+          <Text style={[type.bodyS, { color: colors.textSecondary }]}>
+            {match.matchKind === "ic" ? "Takım içi maç" : "Dış rakip"}
+          </Text>
+        </View>
+      ) : null}
+
+      <View style={s.squadBlock}>
+        <View style={s.squadHead}>
+          <Text style={s.eyebrow}>KADRO</Text>
+          <View style={{ flexDirection: "row", alignItems: "baseline", gap: 5 }}>
+            <Text style={[type.scoreS, { color: colors.ink }]}>
+              {match.attendingCount}
+              {capacity ? `/${capacity}` : ""}
+            </Text>
+            <Text style={s.eyebrow}>KATILIYOR</Text>
+          </View>
+        </View>
+
+        {match.attendingNames.length > 0 && (
+          <Text style={[type.bodyS, { color: colors.textSecondary }]}>
+            {match.attendingNames.join(", ")}
+            {match.attendingCount > match.attendingNames.length
+              ? ` +${match.attendingCount - match.attendingNames.length}`
+              : ""}
+          </Text>
+        )}
+
+        {capacity ? (
+          <View style={s.progressTrack}>
+            <View style={[s.progressFill, { width: `${fillPct}%` }]} />
+          </View>
+        ) : null}
+      </View>
+
+      <View style={s.ctaBlock}>
+        {match.myAttendance === "yes" ? (
+          <>
+            <Button
+              title="✓ Katılıyorsun · Vazgeç"
+              variant="secondary"
+              loading={busy}
+              onPress={() => onAttend("no")}
+            />
+            <Text style={s.ctaHelper}>
+              Kadroda {match.attendingCount}. sıradasın.
+            </Text>
+          </>
+        ) : (
+          <>
+            <Button
+              title={match.myAttendance === "no" ? "Fikrimi değiştirdim" : "Katılıyorum"}
+              loading={busy}
+              onPress={() => onAttend("yes")}
+            />
+            <Text style={s.ctaHelper}>
+              {match.myAttendance === "no"
+                ? "Şu an katılmıyor görünüyorsun."
+                : "Yoklama maç saatine kadar açık."}
+            </Text>
+          </>
+        )}
+      </View>
+    </View>
   );
 }
 
