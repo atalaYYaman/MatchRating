@@ -10,7 +10,7 @@ import { useAuth } from "../../../lib/auth-context";
 import { border, colors, radius, space, type } from "../../../lib/theme";
 
 export default function GroupsScreen() {
-  const { groups, activeGroup, setActiveGroup, refresh, loading } = useActiveGroup();
+  const { groups, activeGroup, isAll, setScope, refresh, loading } = useActiveGroup();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -79,6 +79,16 @@ export default function GroupsScreen() {
 
       <ErrorText>{error}</ErrorText>
 
+      {!isAll && (
+        <View style={{ marginBottom: space[3] }}>
+          <Button
+            title="Tüm takımları göster"
+            variant="secondary"
+            onPress={() => setScope(null)}
+          />
+        </View>
+      )}
+
       {!loading && groups.length === 0 && (
         <Card>
           <Text style={[type.bodyM, { color: colors.textSecondary }]}>
@@ -91,17 +101,17 @@ export default function GroupsScreen() {
       {groups.map((g) => {
         const isActive = g.id === activeGroup?.id;
         return (
-          <Pressable key={g.id} onPress={() => setActiveGroup(g.id)}>
+          <Pressable key={g.id} onPress={() => setScope(g.id)}>
             <View style={[s.groupCard, isActive && s.groupCardActive]}>
               <View style={s.groupHead}>
                 <Text style={[type.displayS, { color: colors.ink, flex: 1 }]}>
                   {g.name}
                 </Text>
                 {isActive ? (
-                  <Badge tone="brand">Aktif</Badge>
+                  <Badge tone="brand">Seçili</Badge>
                 ) : (
                   <Text style={[type.bodyS, { color: colors.textTertiary }]}>
-                    Seçmek için dokun
+                    Odaklanmak için dokun
                   </Text>
                 )}
               </View>

@@ -24,12 +24,17 @@ const MORE_ITEMS = [
 export function TabBar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { activeGroup } = useActiveGroup();
+  const { activeGroup, groups } = useActiveGroup();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  // Bu sayfalar tek takima ait. "Tüm takımlar" seciliyken tek takimi olan
+  // kullanici icin o takim varsayilir; birden fazlaysa once takim secilmeli.
+  const target = activeGroup ?? (groups.length === 1 ? groups[0] : null);
 
   function goGroupRoute(path: string) {
     setMoreOpen(false);
-    if (activeGroup) router.push(`/group/${activeGroup.id}/${path}`);
+    if (target) router.push(`/group/${target.id}/${path}`);
+    else router.push("/groups");
   }
 
   return (
@@ -43,7 +48,6 @@ export function TabBar() {
                 key={item.path}
                 className="more-item"
                 onClick={() => goGroupRoute(item.path)}
-                disabled={!activeGroup}
               >
                 {item.label}
               </button>
@@ -52,13 +56,10 @@ export function TabBar() {
               className="more-item"
               onClick={() => {
                 setMoreOpen(false);
-                if (activeGroup) router.push(`/group/${activeGroup.id}`);
+                router.push(target ? `/group/${target.id}` : "/groups");
               }}
-              disabled={!activeGroup}
             >
-              {activeGroup
-                ? `Davet Kodu · ${activeGroup.invite_code}`
-                : "Takım seçilmedi"}
+              {target ? `Davet Kodu · ${target.invite_code}` : "Takım seç"}
             </button>
           </div>
         </div>

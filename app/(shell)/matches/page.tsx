@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
-import { Badge, BadgeTone, Card, ErrorText, PageHeader } from "@/components/ui";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Badge, BadgeTone, Card, ErrorText } from "@/components/ui";
+import { TeamSwitcher } from "@/components/TeamSwitcher";
 import { api, ApiError } from "@/lib/client-api";
 import { useActiveGroup } from "@/lib/active-group";
 import { clockTime, countdownLabel, shortDate } from "@/lib/dateFormat";
 
 type MatchRow = {
   id: string;
+  group_id: string;
+  group_name: string;
+  isOwner: boolean;
   mode: "poll" | "fixed";
   match_kind: "ic" | "dis";
   scheduled_at: string | null;
@@ -26,22 +30,23 @@ const STATUS: Record<MatchRow["status"], { label: string; tone: BadgeTone }> = {
 };
 
 export default function MatchesPage() {
-  const { activeGroup } = useActiveGroup();
+  const { activeGroup, isAll, scopeId, groups } = useActiveGroup();
 
   const [matches, setMatches] = useState<MatchRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Kapsam degistiginde onceki istek hala ucuyor olabilir; gec donen eski
+  // yanit yenisini ezmesin diye istegin kapsami ile guncel kapsam karsilastirilir.
+  const scopeRef = useRef(scopeId);
+  scopeRef.current = scopeId;
+
   const load = useCallback(async () => {
-    if (!activeGroup) {
-      setMatches([]);
-      setLoading(false);
-      return;
-    }
+    const requested = scopeId;
     try {
-      const data = await api.get<{ matches: MatchRow[] }>(
-        `/api/groups/${activeGroup.id}/matches`
-      );
+      const query = requested ? `?groupId=${requested}` : "";
+      const data = await api.get<{ matches: MatchRow[] }>(`/api/matches${query}`);
+      if (scopeRef.current !== requested) return;
       setMatches(data.matches);
       setError(null);
     } catch (err) {
@@ -49,25 +54,31 @@ export default function MatchesPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeGroup]);
+  }, [scopeId]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  // "Tüm takımlar" gorunumunde hedef belirsiz: yalnizca tek takimin
+  // yoneticisiysen dogrudan oraya, degilse buton gizlenir.
+  const newMatchTarget = activeGroup ?? (groups.length === 1 ? groups[0] : null);
+  const newMatchHref = newMatchTarget
+    ? `/group/${newMatchTarget.id}/match/new`
+    : null;
+
   return (
     <div>
-      <PageHeader
-        eyebrow={activeGroup?.name ?? "TAKIM SEÇİLMEDİ"}
-        title="Maçlar"
-        action={
-          activeGroup ? (
-            <Link href={`/group/${activeGroup.id}/match/new`}>
-              <button className="small">Yeni maç</button>
-            </Link>
-          ) : null
-        }
-      />
+      <div className="page-header">
+        <div className="grow">
+          <TeamSwitcher eyebrow="MAÇLAR · TAKIM" />
+        </div>
+        {newMatchHref && (
+          <Link href={newMatchHref}>
+            <button className="small">Yeni maç</button>
+          </Link>
+        )}
+      </div>
 
       <ErrorText>{error}</ErrorText>
 
@@ -76,9 +87,9 @@ export default function MatchesPage() {
       {!loading && matches.length === 0 && (
         <Card>
           <p className="muted" style={{ margin: 0 }}>
-            {activeGroup
-              ? "Bu takımda henüz maç yok."
-              : "Önce Takımlarım sekmesinden bir takım seç."}
+            {isAll
+              ? "Takımlarının hiçbirinde henüz maç yok."
+              : "Bu takımda henüz maç yok."}
           </p>
         </Card>
       )}
@@ -90,13 +101,14 @@ export default function MatchesPage() {
         return (
           <Link
             key={m.id}
-            href={`/group/${activeGroup?.id}/match/${m.id}`}
+            href={`/group/${m.group_id}/match/${m.id}`}
             style={{ display: "block", color: "inherit" }}
           >
             <Card>
               <div className="row" style={{ justifyContent: "space-between" }}>
                 <Badge tone={status.tone}>{status.label}</Badge>
                 <span className="muted">
+                  {isAll ? `${m.group_name} · ` : ""}
                   {m.match_kind === "ic" ? "Takım içi" : "Dış rakip"}
                 </span>
               </div>

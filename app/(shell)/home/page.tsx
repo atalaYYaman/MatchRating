@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge, Card, ErrorText, Eyebrow, ScoreBadge } from "@/components/ui";
+import { TeamSwitcher } from "@/components/TeamSwitcher";
 import { api, ApiError } from "@/lib/client-api";
 import { useActiveGroup } from "@/lib/active-group";
 import {
@@ -14,10 +15,14 @@ import {
 } from "@/lib/dateFormat";
 
 type HomeData = {
-  group: { id: string; name: string; inviteCode: string };
+  scope: "all" | "group";
+  group: { id: string; name: string; inviteCode: string } | null;
+  groupCount: number;
   isOwner: boolean;
   nextMatch: {
     id: string;
+    groupId: string;
+    groupName: string;
     scheduledAt: string;
     location: string | null;
     matchKind: string;
@@ -37,6 +42,8 @@ type HomeData = {
   };
   lastMatch: {
     id: string;
+    groupId: string;
+    groupName: string;
     scheduledAt: string;
     homeScore: number | null;
     awayScore: number | null;
@@ -50,23 +57,24 @@ type HomeData = {
 };
 
 export default function HomePage() {
-  const { activeGroup, groups, setActiveGroup, loading: groupsLoading } =
-    useActiveGroup();
+  const { scopeId, isAll, groups, loading: groupsLoading } = useActiveGroup();
 
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [switcherOpen, setSwitcherOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  // Kapsam degistiginde onceki istek hala ucuyor olabilir; gec donen eski
+  // yanit yenisini ezmesin diye istegin kapsami ile guncel kapsam karsilastirilir.
+  const scopeRef = useRef(scopeId);
+  scopeRef.current = scopeId;
+
   const load = useCallback(async () => {
-    if (!activeGroup) {
-      setData(null);
-      setLoading(false);
-      return;
-    }
+    const requested = scopeId;
     try {
-      const res = await api.get<HomeData>(`/api/groups/${activeGroup.id}/home`);
+      const query = requested ? `?groupId=${requested}` : "";
+      const res = await api.get<HomeData>(`/api/home${query}`);
+      if (scopeRef.current !== requested) return;
       setData(res);
       setError(null);
     } catch (err) {
@@ -74,18 +82,19 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  }, [activeGroup]);
+  }, [scopeId]);
 
   useEffect(() => {
     load();
   }, [load]);
 
   async function setAttendance(status: "yes" | "no") {
-    if (!activeGroup || !data?.nextMatch) return;
+    if (!data?.nextMatch) return;
     setBusy(true);
     try {
+      // Mac kendi takimina ait; "tum takimlar" gorunumunde de dogru adrese gider.
       await api.post(
-        `/api/groups/${activeGroup.id}/matches/${data.nextMatch.id}/attendance`,
+        `/api/groups/${data.nextMatch.groupId}/matches/${data.nextMatch.id}/attendance`,
         { status }
       );
       await load();
@@ -100,7 +109,7 @@ export default function HomePage() {
     return <p className="muted">Yükleniyor...</p>;
   }
 
-  if (!activeGroup) {
+  if (groups.length === 0) {
     return (
       <Card>
         <h2>Henüz bir takımın yok</h2>
@@ -126,50 +135,9 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* Baslik + takim secici */}
-      <div className="page-header">
-        <div className="grow">
-          <Eyebrow>MATCHRATING · TAKIM</Eyebrow>
-          <button
-            className="team-switch"
-            onClick={() => groups.length > 1 && setSwitcherOpen((v) => !v)}
-          >
-            {activeGroup.name}
-            {groups.length > 1 && (
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              >
-                <path d={switcherOpen ? "m18 15-6-6-6 6" : "m6 9 6 6 6-6"} />
-              </svg>
-            )}
-          </button>
-        </div>
+      <div style={{ marginBottom: "var(--space-4)" }}>
+        <TeamSwitcher />
       </div>
-
-      {switcherOpen && (
-        <Card raised style={{ padding: 0 }}>
-          {groups.map((g) => (
-            <button
-              key={g.id}
-              className="switcher-row"
-              onClick={() => {
-                setActiveGroup(g.id);
-                setSwitcherOpen(false);
-                setLoading(true);
-              }}
-            >
-              {g.name}
-              {g.id === activeGroup.id && <span className="pill pill-brand">Aktif</span>}
-            </button>
-          ))}
-        </Card>
-      )}
 
       <ErrorText>{error}</ErrorText>
 
@@ -177,7 +145,8 @@ export default function HomePage() {
       {next ? (
         <div className="ticket">
           <div className="ticket-head">
-            <Eyebrow>SIRADAKİ MAÇ</Eyebrow>
+            {/* "Tüm takımlar" gorunumunde macin hangi takima ait oldugu yazilir */}
+            <Eyebrow>{isAll ? `SIRADAKİ · ${next.groupName}` : "SIRADAKİ MAÇ"}</Eyebrow>
             <Badge tone="brand">{countdownLabel(next.scheduledAt)}</Badge>
           </div>
 
@@ -302,7 +271,10 @@ export default function HomePage() {
       {/* SON MAC */}
       {last && (
         <>
-          <Eyebrow>SON MAÇ · {shortDate(last.scheduledAt)}</Eyebrow>
+          <Eyebrow>
+            SON MAÇ · {shortDate(last.scheduledAt)}
+            {isAll ? ` · ${last.groupName}` : ""}
+          </Eyebrow>
           <div className="last-match" style={{ marginTop: 8 }}>
             <div className="last-match-head">
               <div className="stack grow">
@@ -344,7 +316,7 @@ export default function HomePage() {
 
             {last.ratingOpen && last.pendingRatings > 0 && (
               <Link
-                href={`/group/${activeGroup.id}/match/${last.id}/rate`}
+                href={`/group/${last.groupId}/match/${last.id}/rate`}
                 className="link-row"
               >
                 Maçı oyla · {last.pendingRatings} oyuncu kaldı

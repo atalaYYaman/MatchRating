@@ -8,10 +8,13 @@ import React, {
 import * as SecureStore from "expo-secure-store";
 import { api, ApiError } from "./api";
 
-// Tasarimdaki alt sekme yapisi tek bir "aktif takim" uzerinden calisiyor:
-// ana sayfa ve maclar sekmesi bu takimi gosterir, Takimlarim sekmesi degistirir.
+// Sekmeli yapinin takim kapsami. Varsayilan "tum takimlar": kullanici birden
+// fazla takimda maca cikiyorsa hepsini tek yerde gorur. Belirli bir takim
+// secilirse ana sayfa, maclar ve istatistikler o takima daralir.
+// Web'deki lib/active-group.tsx ile ayni davranis.
 
-const ACTIVE_GROUP_KEY = "matchrating_active_group";
+const SCOPE_KEY = "matchrating_group_scope";
+const ALL = "all";
 
 export type GroupSummary = {
   id: string;
@@ -23,10 +26,15 @@ export type GroupSummary = {
 
 type ActiveGroupContextValue = {
   groups: GroupSummary[];
+  /** Belirli bir takim seciliyse o takim, "tumu" seciliyse null. */
   activeGroup: GroupSummary | null;
+  /** Kapsam "tum takimlar" mi? */
+  isAll: boolean;
+  /** API'ye gonderilecek groupId (tumu icin null). */
+  scopeId: string | null;
   loading: boolean;
   error: string | null;
-  setActiveGroup: (groupId: string) => void;
+  setScope: (groupId: string | null) => void;
   refresh: () => Promise<void>;
 };
 
@@ -34,7 +42,7 @@ const ActiveGroupContext = createContext<ActiveGroupContextValue | null>(null);
 
 export function ActiveGroupProvider({ children }: { children: React.ReactNode }) {
   const [groups, setGroups] = useState<GroupSummary[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [scopeId, setScopeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,10 +52,11 @@ export function ActiveGroupProvider({ children }: { children: React.ReactNode })
       setGroups(data.groups);
       setError(null);
 
-      // Kayitli takim artik yoksa (cikarilmis olabilir) ilkine dus.
-      const stored = await SecureStore.getItemAsync(ACTIVE_GROUP_KEY);
-      const valid = data.groups.some((g) => g.id === stored);
-      setActiveId(valid ? stored : (data.groups[0]?.id ?? null));
+      // Kayitli takim artik yoksa (cikarilmis olabilir) "tumu"ne dus.
+      const stored = await SecureStore.getItemAsync(SCOPE_KEY);
+      const valid =
+        stored && stored !== ALL && data.groups.some((g) => g.id === stored);
+      setScopeId(valid ? stored : null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Takımlar yüklenemedi.");
     } finally {
@@ -59,16 +68,25 @@ export function ActiveGroupProvider({ children }: { children: React.ReactNode })
     refresh();
   }, [refresh]);
 
-  const setActiveGroup = useCallback((groupId: string) => {
-    setActiveId(groupId);
-    SecureStore.setItemAsync(ACTIVE_GROUP_KEY, groupId).catch(() => {});
+  const setScope = useCallback((groupId: string | null) => {
+    setScopeId(groupId);
+    SecureStore.setItemAsync(SCOPE_KEY, groupId ?? ALL).catch(() => {});
   }, []);
 
-  const activeGroup = groups.find((g) => g.id === activeId) ?? null;
+  const activeGroup = scopeId ? (groups.find((g) => g.id === scopeId) ?? null) : null;
 
   return (
     <ActiveGroupContext.Provider
-      value={{ groups, activeGroup, loading, error, setActiveGroup, refresh }}
+      value={{
+        groups,
+        activeGroup,
+        isAll: scopeId === null,
+        scopeId,
+        loading,
+        error,
+        setScope,
+        refresh,
+      }}
     >
       {children}
     </ActiveGroupContext.Provider>

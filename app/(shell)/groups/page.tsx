@@ -7,7 +7,7 @@ import { api, ApiError } from "@/lib/client-api";
 import { useActiveGroup } from "@/lib/active-group";
 
 export default function GroupsPage() {
-  const { groups, activeGroup, setActiveGroup, refresh, loading } = useActiveGroup();
+  const { groups, activeGroup, isAll, setScope, refresh, loading } = useActiveGroup();
 
   const [newGroupName, setNewGroupName] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -53,6 +53,16 @@ export default function GroupsPage() {
 
       <ErrorText>{error}</ErrorText>
 
+      {!isAll && (
+        <button
+          className="secondary full"
+          style={{ marginBottom: "var(--space-4)" }}
+          onClick={() => setScope(null)}
+        >
+          Tüm takımları göster
+        </button>
+      )}
+
       {!loading && groups.length === 0 && (
         <Card>
           <p className="muted" style={{ margin: 0 }}>
@@ -69,10 +79,10 @@ export default function GroupsPage() {
             <div className="row" style={{ justifyContent: "space-between" }}>
               <h2 style={{ margin: 0 }}>{g.name}</h2>
               {isActive ? (
-                <Badge tone="brand">Aktif</Badge>
+                <Badge tone="brand">Seçili</Badge>
               ) : (
-                <button className="secondary small" onClick={() => setActiveGroup(g.id)}>
-                  Aktif yap
+                <button className="secondary small" onClick={() => setScope(g.id)}>
+                  Bu takıma odaklan
                 </button>
               )}
             </div>

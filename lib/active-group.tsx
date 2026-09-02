@@ -9,12 +9,13 @@ import React, {
 } from "react";
 import { api, ApiError } from "@/lib/client-api";
 
-// Sekmeli yapi tek bir "aktif takim" uzerinden calisiyor: ana sayfa ve maclar
-// bu takimi gosterir, Takimlarim degistirir. Mobildeki
-// mobile/lib/active-group.tsx'in web karsiligi (SecureStore yerine
-// localStorage).
+// Sekmeli yapinin takim kapsami. Varsayilan "tum takimlar": kullanici birden
+// fazla takimda maca cikiyorsa hepsini tek yerde gorur. Belirli bir takim
+// secilirse ana sayfa, maclar ve istatistikler o takima daralir.
+// Mobildeki mobile/lib/active-group.tsx ile ayni davranis.
 
-const ACTIVE_GROUP_KEY = "matchrating_active_group";
+const SCOPE_KEY = "matchrating_group_scope";
+const ALL = "all";
 
 export type GroupSummary = {
   id: string;
@@ -26,18 +27,32 @@ export type GroupSummary = {
 
 type ActiveGroupContextValue = {
   groups: GroupSummary[];
+  /** Belirli bir takim seciliyse o takim, "tumu" seciliyse null. */
   activeGroup: GroupSummary | null;
+  /** Kapsam "tum takimlar" mi? */
+  isAll: boolean;
+  /** API'ye gonderilecek groupId (tumu icin null). */
+  scopeId: string | null;
   loading: boolean;
   error: string | null;
-  setActiveGroup: (groupId: string) => void;
+  setScope: (groupId: string | null) => void;
   refresh: () => Promise<void>;
 };
 
 const ActiveGroupContext = createContext<ActiveGroupContextValue | null>(null);
 
+function readStoredScope(): string | null {
+  try {
+    const raw = window.localStorage.getItem(SCOPE_KEY);
+    return raw && raw !== ALL ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
 export function ActiveGroupProvider({ children }: { children: React.ReactNode }) {
   const [groups, setGroups] = useState<GroupSummary[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [scopeId, setScopeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,15 +62,9 @@ export function ActiveGroupProvider({ children }: { children: React.ReactNode })
       setGroups(data.groups);
       setError(null);
 
-      // Kayitli takim artik yoksa (cikarilmis olabilir) ilkine dus.
-      let stored: string | null = null;
-      try {
-        stored = window.localStorage.getItem(ACTIVE_GROUP_KEY);
-      } catch {
-        stored = null;
-      }
-      const valid = data.groups.some((g) => g.id === stored);
-      setActiveId(valid ? stored : (data.groups[0]?.id ?? null));
+      // Kayitli takim artik yoksa (cikarilmis olabilir) "tumu"ne dus.
+      const stored = readStoredScope();
+      setScopeId(stored && data.groups.some((g) => g.id === stored) ? stored : null);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Takımlar yüklenemedi.");
     } finally {
@@ -67,21 +76,30 @@ export function ActiveGroupProvider({ children }: { children: React.ReactNode })
     refresh();
   }, [refresh]);
 
-  const setActiveGroup = useCallback((groupId: string) => {
-    setActiveId(groupId);
+  const setScope = useCallback((groupId: string | null) => {
+    setScopeId(groupId);
     try {
-      window.localStorage.setItem(ACTIVE_GROUP_KEY, groupId);
+      window.localStorage.setItem(SCOPE_KEY, groupId ?? ALL);
     } catch {
-      // Gizli sekmede localStorage kapali olabilir; secim yine de oturum
-      // boyunca gecerli kalir.
+      // Gizli sekmede localStorage kapali olabilir; secim oturum boyunca
+      // yine de gecerli kalir.
     }
   }, []);
 
-  const activeGroup = groups.find((g) => g.id === activeId) ?? null;
+  const activeGroup = scopeId ? (groups.find((g) => g.id === scopeId) ?? null) : null;
 
   return (
     <ActiveGroupContext.Provider
-      value={{ groups, activeGroup, loading, error, setActiveGroup, refresh }}
+      value={{
+        groups,
+        activeGroup,
+        isAll: scopeId === null,
+        scopeId,
+        loading,
+        error,
+        setScope,
+        refresh,
+      }}
     >
       {children}
     </ActiveGroupContext.Provider>

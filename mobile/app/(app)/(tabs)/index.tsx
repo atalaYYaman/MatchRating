@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Badge, Button, Card, ErrorText, ScoreBadge } from "../../../components/ui";
+import { TeamSwitcher } from "../../../components/TeamSwitcher";
 import { api, ApiError } from "../../../lib/api";
 import { useActiveGroup } from "../../../lib/active-group";
 import {
@@ -23,10 +24,14 @@ import {
 import { border, colors, radius, space, type } from "../../../lib/theme";
 
 type HomeData = {
-  group: { id: string; name: string; inviteCode: string };
+  scope: "all" | "group";
+  group: { id: string; name: string; inviteCode: string } | null;
+  groupCount: number;
   isOwner: boolean;
   nextMatch: {
     id: string;
+    groupId: string;
+    groupName: string;
     scheduledAt: string;
     location: string | null;
     matchKind: string;
@@ -46,6 +51,8 @@ type HomeData = {
   };
   lastMatch: {
     id: string;
+    groupId: string;
+    groupName: string;
     scheduledAt: string;
     homeScore: number | null;
     awayScore: number | null;
@@ -60,25 +67,26 @@ type HomeData = {
 };
 
 export default function HomeScreen() {
-  const { activeGroup, groups, setActiveGroup, loading: groupsLoading } =
-    useActiveGroup();
+  const { scopeId, isAll, groups, loading: groupsLoading } = useActiveGroup();
   const insets = useSafeAreaInsets();
 
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [switcherOpen, setSwitcherOpen] = useState(false);
   const [rsvpBusy, setRsvpBusy] = useState(false);
 
+  // Kapsam degistiginde onceki istek hala ucuyor olabilir; gec donen eski
+  // yanit yenisini ezmesin diye istegin kapsami ile guncel kapsam karsilastirilir.
+  const scopeRef = useRef(scopeId);
+  scopeRef.current = scopeId;
+
   const load = useCallback(async () => {
-    if (!activeGroup) {
-      setData(null);
-      setLoading(false);
-      return;
-    }
+    const requested = scopeId;
     try {
-      const res = await api.get<HomeData>(`/api/groups/${activeGroup.id}/home`);
+      const query = requested ? `?groupId=${requested}` : "";
+      const res = await api.get<HomeData>(`/api/home${query}`);
+      if (scopeRef.current !== requested) return;
       setData(res);
       setError(null);
     } catch (err) {
@@ -86,7 +94,7 @@ export default function HomeScreen() {
     } finally {
       setLoading(false);
     }
-  }, [activeGroup]);
+  }, [scopeId]);
 
   // Mac olusturup geri donunce guncel gorunsun.
   useFocusEffect(
@@ -102,11 +110,12 @@ export default function HomeScreen() {
   }
 
   async function setAttendance(status: "yes" | "no") {
-    if (!activeGroup || !data?.nextMatch) return;
+    if (!data?.nextMatch) return;
     setRsvpBusy(true);
     try {
+      // Mac kendi takimina ait; "tum takimlar" gorunumunde de dogru adrese gider.
       await api.post(
-        `/api/groups/${activeGroup.id}/matches/${data.nextMatch.id}/attendance`,
+        `/api/groups/${data.nextMatch.groupId}/matches/${data.nextMatch.id}/attendance`,
         { status }
       );
       await load();
@@ -125,7 +134,7 @@ export default function HomeScreen() {
     );
   }
 
-  if (!activeGroup) {
+  if (groups.length === 0) {
     return (
       <View style={[s.center, { padding: space[6] }]}>
         <Text style={[type.displayS, { color: colors.ink, marginBottom: space[2] }]}>
@@ -168,54 +177,12 @@ export default function HomeScreen() {
       {/* Baslik + takim secici */}
       <View style={s.header}>
         <View style={{ flex: 1 }}>
-          <Text style={s.eyebrow}>MATCHRATING · TAKIM</Text>
-          <Pressable
-            onPress={() => groups.length > 1 && setSwitcherOpen((v) => !v)}
-            style={s.teamRow}
-          >
-            <Text style={[type.displayS, { color: colors.ink }]} numberOfLines={1}>
-              {activeGroup.name}
-            </Text>
-            {groups.length > 1 && (
-              <Feather
-                name={switcherOpen ? "chevron-up" : "chevron-down"}
-                size={16}
-                color={colors.ink300}
-              />
-            )}
-          </Pressable>
+          <TeamSwitcher />
         </View>
         <View style={s.avatar}>
           <Feather name="user" size={18} color={colors.ink100} />
         </View>
       </View>
-
-      {switcherOpen && (
-        <Card raised style={{ marginBottom: 0, padding: 0 }}>
-          {groups.map((g, i) => (
-            <Pressable
-              key={g.id}
-              onPress={() => {
-                setActiveGroup(g.id);
-                setSwitcherOpen(false);
-                setLoading(true);
-              }}
-              style={[
-                s.switcherRow,
-                i < groups.length - 1 && {
-                  borderBottomWidth: border.width,
-                  borderBottomColor: colors.borderDefault,
-                },
-              ]}
-            >
-              <Text style={[type.bodyM, { color: colors.ink }]}>{g.name}</Text>
-              {g.id === activeGroup.id && (
-                <Feather name="check" size={16} color={colors.pitch} />
-              )}
-            </Pressable>
-          ))}
-        </Card>
-      )}
 
       <ErrorText>{error}</ErrorText>
 
@@ -223,7 +190,9 @@ export default function HomeScreen() {
       {next ? (
         <View style={s.ticket}>
           <View style={s.ticketHead}>
-            <Text style={s.eyebrow}>SIRADAKİ MAÇ</Text>
+            <Text style={s.eyebrow}>
+              {isAll ? `SIRADAKİ · ${next.groupName}` : "SIRADAKİ MAÇ"}
+            </Text>
             <Badge tone="brand">{countdownLabel(next.scheduledAt)}</Badge>
           </View>
 
@@ -366,6 +335,7 @@ export default function HomeScreen() {
         <View style={{ gap: space[2] }}>
           <Text style={[s.eyebrow, { paddingHorizontal: 2 }]}>
             SON MAÇ · {shortDate(last.scheduledAt)}
+            {isAll ? ` · ${last.groupName}` : ""}
           </Text>
           <View style={s.lastCard}>
             <View style={s.lastHead}>
@@ -418,7 +388,7 @@ export default function HomeScreen() {
             {last.ratingOpen && last.pendingRatings > 0 && (
               <Pressable
                 onPress={() =>
-                  router.push(`/group/${activeGroup.id}/match/${last.id}/rate`)
+                  router.push(`/group/${last.groupId}/match/${last.id}/rate`)
                 }
                 style={s.rateRow}
               >

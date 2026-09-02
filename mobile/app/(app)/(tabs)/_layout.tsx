@@ -15,13 +15,16 @@ const MORE_ITEMS = [
 
 export default function TabsLayout() {
   const [moreOpen, setMoreOpen] = useState(false);
-  const { activeGroup } = useActiveGroup();
+  const { activeGroup, groups } = useActiveGroup();
   const insets = useSafeAreaInsets();
+
+  // Bu sayfalar tek takima ait. "Tüm takımlar" seciliyken tek takimi olan
+  // kullanici icin o takim varsayilir; birden fazlaysa takim listesine gider.
+  const target = activeGroup ?? (groups.length === 1 ? groups[0] : null);
 
   function goGroupRoute(path: string) {
     setMoreOpen(false);
-    if (!activeGroup) return;
-    router.push(`/group/${activeGroup.id}/${path}`);
+    router.push(target ? `/group/${target.id}/${path}` : "/groups");
   }
 
   return (
@@ -114,14 +117,12 @@ export default function TabsLayout() {
             <Pressable
               onPress={() => {
                 setMoreOpen(false);
-                if (activeGroup) router.push(`/group/${activeGroup.id}`);
+                router.push(target ? `/group/${target.id}` : "/groups");
               }}
               style={styles.item}
             >
               <Text style={styles.itemText}>
-                {activeGroup
-                  ? `Davet Kodu · ${activeGroup.invite_code}`
-                  : "Takım seçilmedi"}
+                {target ? `Davet Kodu · ${target.invite_code}` : "Takım seç"}
               </Text>
             </Pressable>
           </View>
