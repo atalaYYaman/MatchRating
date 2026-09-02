@@ -17,7 +17,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(email.trim(), password);
-      router.replace("/dashboard");
+      router.replace("/");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Giriş sırasında hata oluştu.");
     } finally {

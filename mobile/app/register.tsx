@@ -18,7 +18,7 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await register(name.trim(), email.trim(), password);
-      router.replace("/dashboard");
+      router.replace("/");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Kayıt sırasında hata oluştu.");
     } finally {
