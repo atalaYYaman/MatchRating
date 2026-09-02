@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { SKILLS } from "@/lib/skills";
 import { positionLabel, PositionKey } from "@/lib/positions";
@@ -34,12 +34,14 @@ type Rating = {
 
 export default function GroupPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const groupId = params.id;
 
   const [group, setGroup] = useState<Group | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [isOwner, setIsOwner] = useState(false);
+  const [meId, setMeId] = useState<string | null>(null);
   const [ratingsBreakdownPublic, setRatingsBreakdownPublic] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -68,6 +70,7 @@ export default function GroupPage() {
       setGroup(groupData.group);
       setMembers(groupData.members);
       setIsOwner(Boolean(groupData.isOwner));
+      setMeId(groupData.meId ?? null);
       setRatingsBreakdownPublic(Boolean(groupData.ratingsBreakdownPublic));
       if (ratingsRes.ok) setRatings(ratingsData.ratings);
     } finally {
@@ -96,6 +99,49 @@ export default function GroupPage() {
       }
       setEditingId(null);
       await load(true);
+    } finally {
+      setSavingMember(false);
+    }
+  }
+
+  async function deleteGroup() {
+    if (
+      !confirm(
+        `"${group?.name}" takımı kalıcı olarak silinecek. Tüm maçlar, oylar ve puanlar da gidecek. Emin misin?`
+      )
+    )
+      return;
+    setSavingMember(true);
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/groups/${groupId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.error || "Takım silinemedi.");
+        return;
+      }
+      router.push("/groups");
+      router.refresh();
+    } finally {
+      setSavingMember(false);
+    }
+  }
+
+  async function leaveGroup() {
+    if (!confirm("Bu takımdan ayrılacaksın. Oyların da silinecek. Emin misin?")) return;
+    setSavingMember(true);
+    setActionError(null);
+    try {
+      const res = await fetch(`/api/groups/${groupId}/members/${meId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.error || "Takımdan ayrılınamadı.");
+        return;
+      }
+      router.push("/groups");
+      router.refresh();
     } finally {
       setSavingMember(false);
     }
@@ -300,6 +346,32 @@ export default function GroupPage() {
             })}
           </tbody>
         </table>
+      </div>
+
+      {/* Geri alinamaz islemler en altta, ayri bir blokta */}
+      <div className="card" style={{ marginTop: "var(--space-6)" }}>
+        <span className="eyebrow">TAKIM AYARLARI</span>
+        {actionError && <p className="error">{actionError}</p>}
+        {isOwner ? (
+          <>
+            <p className="muted">
+              Takımı silmek geri alınamaz; tüm maçlar, oylar ve puanlar da silinir.
+            </p>
+            <button className="danger" onClick={deleteGroup} disabled={savingMember}>
+              Takımı sil
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="muted">
+              Takımdan ayrılırsan bu takımdaki oyların silinir. Davet koduyla tekrar
+              katılabilirsin.
+            </p>
+            <button className="danger" onClick={leaveGroup} disabled={savingMember}>
+              Takımdan ayrıl
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

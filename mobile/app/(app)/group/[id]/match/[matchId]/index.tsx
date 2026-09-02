@@ -88,6 +88,33 @@ export default function MatchDetailScreen() {
     }
   }
 
+  function confirmCancelMatch() {
+    Alert.alert(
+      "Maçı iptal et",
+      "Maç iptal edilecek. Yoklama ve anket cevapları kaybolmaz ama maç kapanır.",
+      [
+        { text: "Vazgeç", style: "cancel" },
+        {
+          text: "İptal et",
+          style: "destructive",
+          onPress: async () => {
+            setBusy(true);
+            setError(null);
+            try {
+              await api.delete(`/api/groups/${id}/matches/${matchId}`);
+              router.back();
+            } catch (err) {
+              setError(
+                err instanceof ApiError ? err.message : "Maç iptal edilemedi."
+              );
+              setBusy(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
   if (!data) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.surfacePage, padding: space[4] }}>
@@ -388,6 +415,24 @@ export default function MatchDetailScreen() {
                 "Skor kaydedilemedi."
               )
             }
+          />
+        </Card>
+      )}
+
+      {/* Maci yalnizca olusturan yonetici iptal edebilir */}
+      {canManage && m.status !== "completed" && m.status !== "cancelled" && (
+        <Card>
+          <Label>Maç ayarları</Label>
+          <Text
+            style={[type.bodyS, { color: colors.textSecondary, marginBottom: space[3] }]}
+          >
+            İptal edilen maç listede &quot;İptal&quot; olarak görünür ve yoklama kapanır.
+          </Text>
+          <Button
+            title="Maçı iptal et"
+            variant="danger"
+            loading={busy}
+            onPress={confirmCancelMatch}
           />
         </Card>
       )}

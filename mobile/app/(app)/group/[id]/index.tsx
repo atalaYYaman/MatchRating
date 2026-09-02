@@ -11,7 +11,7 @@ import {
 import { Button, Card, ErrorText, Field, Screen } from "../../../../components/ui";
 import { api, ApiError } from "../../../../lib/api";
 import { positionLabel } from "../../../../lib/constants";
-import { colors } from "../../../../lib/theme";
+import { colors, space, type } from "../../../../lib/theme";
 
 type Group = { id: string; name: string; invite_code: string; owner_id: string };
 type Member = { id: string; name: string; account_name: string; email: string; nickname: string | null };
@@ -31,6 +31,7 @@ export default function GroupScreen() {
   const [members, setMembers] = useState<Member[]>([]);
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [isOwner, setIsOwner] = useState(false);
+  const [meId, setMeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -42,12 +43,15 @@ export default function GroupScreen() {
   const load = useCallback(async () => {
     try {
       const [groupData, ratingsData] = await Promise.all([
-        api.get<{ group: Group; members: Member[]; isOwner: boolean }>(`/api/groups/${id}`),
+        api.get<{ group: Group; members: Member[]; isOwner: boolean; meId: string }>(
+          `/api/groups/${id}`
+        ),
         api.get<{ ratings: Rating[] }>(`/api/groups/${id}/ratings`),
       ]);
       setGroup(groupData.group);
       setMembers(groupData.members);
       setIsOwner(groupData.isOwner);
+      setMeId(groupData.meId ?? null);
       setRatings(ratingsData.ratings);
       setError(null);
     } catch (err) {
@@ -79,6 +83,60 @@ export default function GroupScreen() {
     } finally {
       setSavingMember(false);
     }
+  }
+
+  function confirmDeleteGroup() {
+    Alert.alert(
+      "Takımı sil",
+      `"${group?.name}" kalıcı olarak silinecek. Tüm maçlar, oylar ve puanlar da gidecek.`,
+      [
+        { text: "Vazgeç", style: "cancel" },
+        {
+          text: "Sil",
+          style: "destructive",
+          onPress: async () => {
+            setSavingMember(true);
+            try {
+              await api.delete(`/api/groups/${id}`);
+              router.replace("/groups");
+            } catch (err) {
+              setActionError(
+                err instanceof ApiError ? err.message : "Takım silinemedi."
+              );
+            } finally {
+              setSavingMember(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
+  function confirmLeaveGroup() {
+    Alert.alert(
+      "Takımdan ayrıl",
+      "Bu takımdan ayrılacaksın. Oyların da silinecek.",
+      [
+        { text: "Vazgeç", style: "cancel" },
+        {
+          text: "Ayrıl",
+          style: "destructive",
+          onPress: async () => {
+            setSavingMember(true);
+            try {
+              await api.delete(`/api/groups/${id}/members/${meId}`);
+              router.replace("/groups");
+            } catch (err) {
+              setActionError(
+                err instanceof ApiError ? err.message : "Takımdan ayrılınamadı."
+              );
+            } finally {
+              setSavingMember(false);
+            }
+          },
+        },
+      ]
+    );
   }
 
   function confirmRemoveMember(member: Member) {
@@ -252,6 +310,26 @@ export default function GroupScreen() {
             </Card>
           );
         })}
+
+        {/* Geri alinamaz islemler en altta, ayri bir blokta */}
+        <Card style={{ marginTop: space[6] }}>
+          <Text style={[type.labelS, { textTransform: "uppercase", color: colors.textTertiary }]}>
+            TAKIM AYARLARI
+          </Text>
+          <Text
+            style={[type.bodyS, { color: colors.textSecondary, marginVertical: space[2] }]}
+          >
+            {isOwner
+              ? "Takımı silmek geri alınamaz; tüm maçlar, oylar ve puanlar da silinir."
+              : "Takımdan ayrılırsan bu takımdaki oyların silinir. Davet koduyla tekrar katılabilirsin."}
+          </Text>
+          <Button
+            title={isOwner ? "Takımı sil" : "Takımdan ayrıl"}
+            variant="danger"
+            loading={savingMember}
+            onPress={isOwner ? confirmDeleteGroup : confirmLeaveGroup}
+          />
+        </Card>
       </Screen>
     </ScrollView>
   );

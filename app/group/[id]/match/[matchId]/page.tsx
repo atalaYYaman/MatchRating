@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Badge, Card, ErrorText, Eyebrow, Field } from "@/components/ui";
 import { api, ApiError } from "@/lib/client-api";
@@ -31,6 +31,7 @@ type Detail = {
 
 export default function MatchDetailPage() {
   const params = useParams<{ id: string; matchId: string }>();
+  const router = useRouter();
   const { id: groupId, matchId } = params;
 
   const [data, setData] = useState<Detail | null>(null);
@@ -66,6 +67,25 @@ export default function MatchDetailPage() {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : fallback);
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelMatch() {
+    if (
+      !confirm(
+        "Maç iptal edilecek. Yoklama ve anket cevapları kaybolmaz ama maç kapanır. Emin misin?"
+      )
+    )
+      return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.delete(`/api/groups/${groupId}/matches/${matchId}`);
+      router.push("/matches");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Maç iptal edilemedi.");
       setBusy(false);
     }
   }
@@ -357,6 +377,20 @@ export default function MatchDetailPage() {
             }
           >
             Skoru kaydet
+          </button>
+        </Card>
+      )}
+
+      {/* Maci yalnizca olusturan yonetici iptal edebilir */}
+      {data.isOwner && m.status !== "completed" && m.status !== "cancelled" && (
+        <Card>
+          <Eyebrow>MAÇ AYARLARI</Eyebrow>
+          <p className="muted">
+            İptal edilen maç listede &quot;İptal&quot; olarak görünür ve yoklama
+            kapanır.
+          </p>
+          <button className="danger full" onClick={cancelMatch} disabled={busy}>
+            Maçı iptal et
           </button>
         </Card>
       )}

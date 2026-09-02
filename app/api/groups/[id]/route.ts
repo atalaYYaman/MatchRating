@@ -43,8 +43,33 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   return NextResponse.json({
     group,
     members: membersResult.rows,
+    // Istemci "takimdan ayril" icin kendi uyelik satirini hedefliyor.
+    meId: session.userId,
     isOwner: group.owner_id === session.userId,
     ratingsBreakdownPublic:
       group.ratings_breakdown_public === true || group.ratings_breakdown_public === "t",
   });
+}
+
+// DELETE: takimi tamamen siler. Yalnizca yonetici yapabilir; uyelikler,
+// oylar, maclar ve puan duzeltmeleri sema tarafindaki ON DELETE CASCADE ile
+// birlikte gider.
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
+
+  const groupResult = await sql`
+    SELECT id, owner_id, name FROM groups WHERE id = ${params.id}
+  `;
+  const group = groupResult.rows[0];
+  if (!group) return NextResponse.json({ error: "Takım bulunamadı." }, { status: 404 });
+  if (group.owner_id !== session.userId) {
+    return NextResponse.json(
+      { error: "Takımı yalnızca yöneticisi silebilir." },
+      { status: 403 }
+    );
+  }
+
+  await sql`DELETE FROM groups WHERE id = ${params.id}`;
+  return NextResponse.json({ ok: true });
 }

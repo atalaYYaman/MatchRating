@@ -70,7 +70,10 @@ export async function PATCH(
   return NextResponse.json({ ok: true, nickname });
 }
 
-// DELETE: uyeyi gruptan cikar (yonetici kendini cikaramaz)
+// DELETE: uyeyi gruptan cikarir. Iki durumda calisir:
+//  - yonetici baska bir uyeyi cikarir,
+//  - uye kendi kendini cikarir (gruptan ayrilma).
+// Yonetici gruptan ayrilamaz; onun yerine grubu silmesi gerekir.
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string; userId: string } }
@@ -78,11 +81,29 @@ export async function DELETE(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
 
-  const owned = await getOwnedGroup(params.id, session.userId);
-  if (!owned.ok) return owned.error;
+  const groupRes = await sql`SELECT id, owner_id FROM groups WHERE id = ${params.id}`;
+  const group = groupRes.rows[0];
+  if (!group) return NextResponse.json({ error: "Takım bulunamadı." }, { status: 404 });
 
-  if (params.userId === owned.group.owner_id) {
-    return NextResponse.json({ error: "Yönetici gruptan çıkarılamaz." }, { status: 400 });
+  const isSelf = params.userId === session.userId;
+  const isOwner = group.owner_id === session.userId;
+
+  if (!isSelf && !isOwner) {
+    return NextResponse.json(
+      { error: "Bu işlem için grubun yöneticisi olmalısınız." },
+      { status: 403 }
+    );
+  }
+
+  if (params.userId === group.owner_id) {
+    return NextResponse.json(
+      {
+        error: isSelf
+          ? "Yönetici takımdan ayrılamaz. Takımı silebilirsin."
+          : "Yönetici gruptan çıkarılamaz.",
+      },
+      { status: 400 }
+    );
   }
 
   if (!(await isGroupMember(params.id, params.userId))) {
