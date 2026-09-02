@@ -29,7 +29,7 @@ export async function middleware(req: NextRequest) {
 
   if (session && (pathname === "/login" || pathname === "/register")) {
     const url = req.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/home";
     return NextResponse.redirect(url);
   }
 

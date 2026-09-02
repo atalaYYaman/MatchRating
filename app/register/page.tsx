@@ -27,7 +27,7 @@ export default function RegisterPage() {
         setError(data.error || "Bir hata oluştu.");
         return;
       }
-      router.push("/dashboard");
+      router.push("/home");
       router.refresh();
     } catch {
       setError("Sunucuya ulaşılamadı.");

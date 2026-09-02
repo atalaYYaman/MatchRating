@@ -389,3 +389,614 @@ input[type="range"] {
 input[type="range"]:focus {
   box-shadow: none;
 }
+
+/* ==========================================================================
+   Sekmeli kabuk — mobil oncelikli. Telefonda tam genislik, masaustunde
+   ortalanmis tek kolon (kullanicilarin cogu siteye telefondan giriyor).
+   ========================================================================== */
+
+.container {
+  max-width: 520px;
+}
+
+.shell {
+  min-height: 100dvh;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--chalk-100);
+  border-top: 1px solid var(--border-default);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 40;
+}
+
+.tabbar-inner {
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  align-items: stretch;
+  padding: 6px 6px 8px;
+}
+
+.tab {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 8px 2px;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--ink-300);
+  font-family: var(--font-display);
+  font-weight: 600;
+  /* 5 sekme dar telefonlarda sigmasi icin etiket kucuk ve tek satir */
+  font-size: 9.5px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tab span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab:hover {
+  filter: none;
+  color: var(--ink-500);
+  text-decoration: none;
+}
+
+.tab:active {
+  transform: none;
+}
+
+.tab-active,
+.tab-active:hover {
+  color: var(--pitch);
+}
+
+/* "Daha Fazla" menusu */
+.more-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 35, 28, 0.28);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 10px calc(86px + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+}
+
+.more-sheet {
+  width: 100%;
+  max-width: 500px;
+  background: var(--surface-card-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.more-header {
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--border-default);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: var(--tracking-label);
+  color: var(--text-tertiary);
+}
+
+.more-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border-default);
+  border-radius: 0;
+  padding: 13px 14px;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.more-item:last-child {
+  border-bottom: none;
+}
+
+.more-item:hover:not(:disabled) {
+  filter: none;
+  background: var(--chalk-100);
+}
+
+.more-item:active:not(:disabled) {
+  transform: none;
+}
+
+/* ==========================================================================
+   Tasarim sistemi bilesenleri
+   ========================================================================== */
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.card-raised {
+  background: var(--surface-card-raised);
+  border-width: 1.5px;
+  border-color: var(--border-strong);
+}
+
+.pill-brand {
+  background: var(--pitch-100);
+  color: var(--pitch-900);
+}
+
+.pill-accent {
+  background: var(--amber-100);
+  color: var(--amber-700);
+}
+
+.pill-danger {
+  background: var(--brick-100);
+  color: var(--brick);
+}
+
+.score-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface-card-raised);
+  border: 1.5px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-width: 56px;
+}
+
+.score-badge-lg {
+  padding: 10px 16px;
+  min-width: 76px;
+}
+
+.score-badge-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--pitch-900);
+}
+
+.score-badge-lg .score-badge-value {
+  font-size: 34px;
+}
+
+.inline-msg {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  font-size: 13px;
+  background: var(--chalk-200);
+  color: var(--ink-700);
+}
+
+.inline-msg-success {
+  background: var(--pitch-100);
+  border-color: var(--pitch-300);
+  color: var(--pitch-900);
+}
+
+.inline-msg-danger {
+  background: var(--brick-100);
+  border-color: var(--brick);
+  color: var(--brick);
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.page-header h1 {
+  margin: 2px 0 0;
+}
+
+/* ==========================================================================
+   Ana sayfa — bilet duzenindeki mac karti
+   ========================================================================== */
+
+.ticket {
+  background: var(--surface-card-raised);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+
+.ticket-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.ticket-scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.ticket-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 16px 8px 15px;
+}
+
+.ticket-cell + .ticket-cell {
+  border-left: 1px solid var(--border-default);
+}
+
+.ticket-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--pitch-900);
+}
+
+.ticket-location {
+  padding: 12px 14px;
+  border-top: 1px solid var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+  background: var(--chalk-100);
+}
+
+.ticket-squad {
+  padding: 13px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ticket-squad-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.progress-track {
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--chalk-300);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--pitch);
+}
+
+.ticket-cta {
+  padding: 0 14px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.ticket-cta button {
+  width: 100%;
+}
+
+.cta-helper {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0;
+}
+
+/* Aylik istatistikler */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+
+.stats-cell {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stats-cell + .stats-cell {
+  border-left: 1px solid var(--border-default);
+}
+
+.stats-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--pitch-900);
+}
+
+.result-squares {
+  display: flex;
+  gap: 4px;
+}
+
+.result-square {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  background: var(--chalk-300);
+}
+
+.result-square.win { background: var(--pitch); }
+.result-square.loss { background: var(--ink-100); }
+.result-square.draw { background: var(--chalk-300); }
+
+/* Son mac karti */
+.last-match {
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+
+.last-match-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 14px 12px;
+}
+
+.big-score {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--pitch-900);
+}
+
+.big-score.muted { color: var(--ink-300); font-size: 34px; }
+
+.mvp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-top: 1px solid var(--border-default);
+  background: var(--chalk-100);
+}
+
+.mvp-tag {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: var(--tracking-label);
+  color: var(--amber-700);
+  background: var(--amber-100);
+  border-radius: var(--radius-pill);
+  padding: 3px 8px;
+}
+
+.link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border-default);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-link);
+  width: 100%;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.link-row:hover {
+  filter: none;
+  background: var(--chalk-100);
+  text-decoration: none;
+}
+
+.link-row:active { transform: none; }
+
+/* Takim secici */
+.team-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.team-switch:hover { filter: none; color: var(--pitch); }
+.team-switch:active { transform: none; }
+
+.switcher-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border-default);
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.switcher-row:last-child { border-bottom: none; }
+.switcher-row:hover { filter: none; background: var(--chalk-100); }
+.switcher-row:active { transform: none; }
+
+/* Segment secici (mac tipi / rakip) */
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.segment {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card-raised);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 15px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.segment span {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.segment:hover { filter: none; background: var(--chalk-100); }
+
+.segment-active,
+.segment-active:hover {
+  background: var(--pitch);
+  border-color: var(--pitch);
+  color: var(--text-on-brand);
+}
+
+.segment-active span { color: var(--pitch-100); }
+
+/* Yetenek secim cipleri (mac sonrasi puanlama) */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chip:hover:not(:disabled) { filter: none; background: var(--chalk-200); }
+.chip:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.chip-strength,
+.chip-strength:hover {
+  background: var(--pitch);
+  border-color: var(--pitch);
+  color: var(--text-on-brand);
+}
+
+.chip-weakness,
+.chip-weakness:hover {
+  background: var(--brick);
+  border-color: var(--brick);
+  color: var(--text-on-brand);
+}
+
+/* Secenek / liste satirlari */
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: var(--radius-button);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card-raised);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 15px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.option-row:hover { filter: none; background: var(--chalk-100); }
+.option-row:active { transform: none; }
+
+.option-row-on,
+.option-row-on:hover {
+  border-color: var(--pitch);
+  border-width: 1.5px;
+  background: var(--pitch-100);
+}
+
+.muted { color: var(--text-secondary); font-size: 13px; }
+/* align-items olmadan rozet/pill'ler tam genislige yayiliyor */
+.stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.grow { flex: 1; min-width: 0; }
+.full { width: 100%; }

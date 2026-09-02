@@ -26,7 +26,7 @@ export default function LoginPage() {
         setError(data.error || "Bir hata oluştu.");
         return;
       }
-      router.push("/dashboard");
+      router.push("/home");
       router.refresh();
     } catch {
       setError("Sunucuya ulaşılamadı.");
