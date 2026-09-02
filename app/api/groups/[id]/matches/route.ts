@@ -1,0 +1,171 @@
+import { NextRequest, NextResponse } from "next/server";
+import { sql } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { isGroupMember, isGroupOwner } from "@/lib/groupAccess";
+import { maybeProcessMatchRatings } from "@/lib/matchRating";
+
+const MAX_POLL_OPTIONS = 12;
+
+type OptionInput = { startsAt: string; location: string };
+
+function parseOptions(raw: unknown): OptionInput[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const options: OptionInput[] = [];
+  for (const item of raw.slice(0, MAX_POLL_OPTIONS)) {
+    if (!item || typeof item !== "object") return null;
+    const row = item as Record<string, unknown>;
+    const startsAt = typeof row.startsAt === "string" ? row.startsAt : "";
+    const location =
+      typeof row.location === "string" ? row.location.trim().slice(0, 120) : "";
+    if (!startsAt || Number.isNaN(Date.parse(startsAt)) || !location) return null;
+    options.push({ startsAt, location });
+  }
+  return options.length > 0 ? options : null;
+}
+
+export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
+
+  const [isMember, matchesRes] = await Promise.all([
+    isGroupMember(params.id, session.userId),
+    sql`
+      SELECT m.id, m.mode, m.match_kind, m.required_players, m.note,
+             m.scheduled_at, m.location, m.status, m.ratings_processed_at,
+             m.created_at,
+             COUNT(DISTINCT a.user_id) FILTER (WHERE a.status = 'yes')::int AS attending_count,
+             COUNT(DISTINCT p.user_id)::int AS poll_response_count
+      FROM matches m
+      LEFT JOIN match_attendance a ON a.match_id = m.id
+      LEFT JOIN match_poll_responses p ON p.match_id = m.id
+      WHERE m.group_id = ${params.id}
+      GROUP BY m.id
+      ORDER BY m.created_at DESC
+      LIMIT 50
+    `,
+  ]);
+
+  if (!isMember) {
+    return NextResponse.json({ error: "Bu takıma erişiminiz yok." }, { status: 403 });
+  }
+
+  // Oynanmis ama henuz islenmemis maclar varsa burada isle; ayri bir cron
+  // gerekmesin diye.
+  const pending = matchesRes.rows.filter(
+    (m) =>
+      m.status === "scheduled" &&
+      m.scheduled_at &&
+      new Date(m.scheduled_at as string).getTime() <= Date.now()
+  );
+  if (pending.length > 0) {
+    const results = await Promise.all(
+      pending.map(async (m) => ({
+        id: m.id as string,
+        result: await maybeProcessMatchRatings(m.id as string),
+      }))
+    );
+    const processedIds = new Set(
+      results.filter((r) => r.result.processed).map((r) => r.id)
+    );
+    for (const row of matchesRes.rows) {
+      if (processedIds.has(row.id as string)) {
+        row.status = "completed";
+        row.ratings_processed_at = new Date().toISOString();
+      }
+    }
+  }
+
+  return NextResponse.json({ matches: matchesRes.rows });
+}
+
+// POST: yalnizca grup yoneticisi mac olusturabilir.
+// poll  -> { mode:'poll', matchKind, requiredPlayers?, note?, options:[{startsAt,location}] }
+// fixed -> { mode:'fixed', matchKind, requiredPlayers?, note?, scheduledAt, location }
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
+
+  const isOwner = await isGroupOwner(params.id, session.userId);
+  if (!isOwner) {
+    return NextResponse.json(
+      { error: "Maç oluşturmak için grubun yöneticisi olmalısınız." },
+      { status: 403 }
+    );
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const mode = body?.mode;
+  const matchKind = body?.matchKind;
+
+  if (mode !== "poll" && mode !== "fixed") {
+    return NextResponse.json({ error: "Geçersiz maç tipi." }, { status: 400 });
+  }
+  if (matchKind !== "ic" && matchKind !== "dis") {
+    return NextResponse.json({ error: "İç/dış maç seçmelisiniz." }, { status: 400 });
+  }
+
+  const requiredPlayersRaw = Number(body?.requiredPlayers);
+  const requiredPlayers =
+    Number.isFinite(requiredPlayersRaw) && requiredPlayersRaw > 0
+      ? Math.min(Math.round(requiredPlayersRaw), 100)
+      : null;
+  const note =
+    typeof body?.note === "string" && body.note.trim() !== ""
+      ? body.note.trim().slice(0, 500)
+      : null;
+
+  if (mode === "fixed") {
+    const scheduledAt = typeof body?.scheduledAt === "string" ? body.scheduledAt : "";
+    const location =
+      typeof body?.location === "string" ? body.location.trim().slice(0, 120) : "";
+    if (!scheduledAt || Number.isNaN(Date.parse(scheduledAt))) {
+      return NextResponse.json({ error: "Geçerli bir tarih/saat girin." }, { status: 400 });
+    }
+    if (!location) {
+      return NextResponse.json({ error: "Konum girmelisiniz." }, { status: 400 });
+    }
+
+    const result = await sql`
+      INSERT INTO matches
+        (group_id, created_by, mode, match_kind, required_players, note,
+         scheduled_at, location, status)
+      VALUES
+        (${params.id}, ${session.userId}, 'fixed', ${matchKind}, ${requiredPlayers},
+         ${note}, ${scheduledAt}, ${location}, 'scheduled')
+      RETURNING id, mode, match_kind, scheduled_at, location, status, created_at
+    `;
+    return NextResponse.json({ match: result.rows[0] });
+  }
+
+  const options = parseOptions(body?.options);
+  if (!options) {
+    return NextResponse.json(
+      { error: "En az bir geçerli anket seçeneği (tarih + konum) girmelisiniz." },
+      { status: 400 }
+    );
+  }
+
+  const result = await sql`
+    INSERT INTO matches
+      (group_id, created_by, mode, match_kind, required_players, note, status)
+    VALUES
+      (${params.id}, ${session.userId}, 'poll', ${matchKind}, ${requiredPlayers},
+       ${note}, 'poll_open')
+    RETURNING id, mode, match_kind, status, created_at
+  `;
+  const match = result.rows[0];
+
+  const values: string[] = [];
+  const insertParams: unknown[] = [];
+  options.forEach((option, index) => {
+    const base = index * 3;
+    values.push(`($${base + 1}::uuid, $${base + 2}::timestamptz, $${base + 3}::text)`);
+    insertParams.push(match.id, option.startsAt, option.location);
+  });
+  await sql.query(
+    `INSERT INTO match_options (match_id, starts_at, location) VALUES ${values.join(", ")}`,
+    insertParams
+  );
+
+  return NextResponse.json({ match });
+}

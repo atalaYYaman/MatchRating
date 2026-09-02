@@ -15,8 +15,17 @@ export type GroupRating = {
   secondaryPosition: string | null;
 };
 
+// Oy tabanli temel puan bu araliga kirpilir; mac duzeltmeleri uzun vadede
+// puani asiri uclara tasimasin diye.
+const MIN_FINAL_SCORE = 30;
+const MAX_FINAL_SCORE = 99;
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
 export async function computeGroupRatings(groupId: string): Promise<GroupRating[]> {
-  const [members, voteRows, positionVoteRows] = await Promise.all([
+  const [members, voteRows, positionVoteRows, adjustmentRows] = await Promise.all([
     sql`
       SELECT u.id, COALESCE(NULLIF(BTRIM(gm.nickname), ''), u.name) AS name
       FROM group_members gm
@@ -33,7 +42,19 @@ export async function computeGroupRatings(groupId: string): Promise<GroupRating[
       FROM position_votes
       WHERE group_id = ${groupId}
     `,
+    sql`
+      SELECT user_id, skill, SUM(delta)::float8 AS total
+      FROM skill_adjustments
+      WHERE group_id = ${groupId}
+      GROUP BY user_id, skill
+    `,
   ]);
+
+  // Mac sonuclarindan gelen duzeltmeler: (user, skill) -> toplam delta
+  const adjustments = new Map<string, number>();
+  for (const row of adjustmentRows.rows) {
+    adjustments.set(`${row.user_id}:${row.skill}`, Number(row.total) || 0);
+  }
 
   const votesByTarget = new Map<string, Map<string, number[]>>();
   for (const row of voteRows.rows) {
@@ -68,8 +89,13 @@ export async function computeGroupRatings(groupId: string): Promise<GroupRating[
     let sum = 0;
     for (const key of SKILL_KEYS) {
       const { value } = aggregateScores(skillVotes?.get(key) ?? []);
-      perSkill[key] = Math.round(value * 10) / 10;
-      sum += value;
+      const adjusted = clamp(
+        value + (adjustments.get(`${m.id}:${key}`) ?? 0),
+        MIN_FINAL_SCORE,
+        MAX_FINAL_SCORE
+      );
+      perSkill[key] = Math.round(adjusted * 10) / 10;
+      sum += adjusted;
     }
 
     const pos = positions.get(m.id as string);
