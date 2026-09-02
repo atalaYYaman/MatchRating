@@ -21,8 +21,8 @@ export default function AppLayout() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: colors.card },
-        headerTintColor: colors.text,
+        headerStyle: { backgroundColor: colors.surfaceCard },
+        headerTintColor: colors.textPrimary,
         headerTitleStyle: { fontWeight: "700" },
       }}
     >

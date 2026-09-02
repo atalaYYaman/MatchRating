@@ -114,7 +114,7 @@ export default function Dashboard() {
             </Card>
 
             {!loading && groups.length === 0 && (
-              <Text style={{ color: colors.muted, textAlign: "center", marginTop: 8 }}>
+              <Text style={{ color: colors.textSecondary, textAlign: "center", marginTop: 8 }}>
                 Henüz bir takımın yok.
               </Text>
             )}
@@ -123,10 +123,10 @@ export default function Dashboard() {
         renderItem={({ item }) => (
           <Pressable onPress={() => router.push(`/group/${item.id}`)}>
             <Card>
-              <Text style={{ fontSize: 16, fontWeight: "700", color: colors.text }}>
+              <Text style={{ fontSize: 16, fontWeight: "700", color: colors.textPrimary }}>
                 {item.name}
               </Text>
-              <Text style={{ color: colors.muted, marginTop: 4 }}>
+              <Text style={{ color: colors.textSecondary, marginTop: 4 }}>
                 {item.member_count} üye · Davet kodu: {item.invite_code}
               </Text>
             </Card>

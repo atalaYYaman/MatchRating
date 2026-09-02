@@ -97,7 +97,7 @@ export default function TeamsScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.surfacePage }}>
       <Screen>
         <ErrorText>{error}</ErrorText>
 
@@ -106,14 +106,14 @@ export default function TeamsScreen() {
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <Pressable
               onPress={() => setTeamCount((n) => Math.max(2, n - 1))}
-              style={{ padding: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 8 }}
+              style={{ padding: 10, borderWidth: 1, borderColor: colors.borderDefault, borderRadius: 8 }}
             >
               <Text style={{ fontSize: 16 }}>−</Text>
             </Pressable>
             <Text style={{ fontSize: 18, fontWeight: "700" }}>{teamCount}</Text>
             <Pressable
               onPress={() => setTeamCount((n) => n + 1)}
-              style={{ padding: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 8 }}
+              style={{ padding: 10, borderWidth: 1, borderColor: colors.borderDefault, borderRadius: 8 }}
             >
               <Text style={{ fontSize: 16 }}>+</Text>
             </Pressable>
@@ -124,7 +124,7 @@ export default function TeamsScreen() {
           <Label>Kadroya dahil edilecek oyuncular ({selected.size})</Label>
           {loading && (
             <View style={{ paddingVertical: 20 }}>
-              <ActivityIndicator color={colors.primary} />
+              <ActivityIndicator color={colors.pitch} />
             </View>
           )}
           {ratings.map((r) => {
@@ -137,11 +137,11 @@ export default function TeamsScreen() {
                     justifyContent: "space-between",
                     paddingVertical: 8,
                     borderBottomWidth: 1,
-                    borderBottomColor: colors.border,
+                    borderBottomColor: colors.borderDefault,
                   }}
                 >
-                  <Text style={{ color: checked ? colors.text : colors.muted }}>{r.name}</Text>
-                  <Text style={{ color: checked ? colors.primary : colors.muted }}>
+                  <Text style={{ color: checked ? colors.textPrimary : colors.textSecondary }}>{r.name}</Text>
+                  <Text style={{ color: checked ? colors.pitch : colors.textSecondary }}>
                     {checked ? "✓ Dahil" : "Hariç"}
                   </Text>
                 </View>
@@ -170,11 +170,11 @@ export default function TeamsScreen() {
                 paddingTop: 10,
               }}
             >
-              <Text style={{ color: colors.text }}>
+              <Text style={{ color: colors.textPrimary }}>
                 {g.name} · {g.overall}
               </Text>
               <Pressable onPress={() => removeGuest(g.id)}>
-                <Text style={{ color: colors.danger }}>Kaldır</Text>
+                <Text style={{ color: colors.stateDanger }}>Kaldır</Text>
               </Pressable>
             </View>
           ))}
@@ -186,11 +186,11 @@ export default function TeamsScreen() {
           <View style={{ marginTop: 16 }}>
             {teams.map((team) => (
               <Card key={team.index}>
-                <Text style={{ fontWeight: "700", color: colors.text, marginBottom: 6 }}>
+                <Text style={{ fontWeight: "700", color: colors.textPrimary, marginBottom: 6 }}>
                   Takım {team.index + 1} · Ort. güç: {team.averageRating}
                 </Text>
                 {team.players.map((p) => (
-                  <Text key={p.userId} style={{ color: colors.muted, marginTop: 2 }}>
+                  <Text key={p.userId} style={{ color: colors.textSecondary, marginTop: 2 }}>
                     {p.name}
                     {p.isGuest ? " (misafir)" : ""} · {p.overall} ·{" "}
                     {positionLabel(p.primaryPosition)}

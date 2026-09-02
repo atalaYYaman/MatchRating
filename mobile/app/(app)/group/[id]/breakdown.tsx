@@ -71,7 +71,7 @@ export default function BreakdownScreen() {
     return (
       <Screen>
         <Card>
-          <Text style={{ color: colors.muted }}>
+          <Text style={{ color: colors.textSecondary }}>
             Puan detayları şu an sadece yöneticiye açık.
           </Text>
         </Card>
@@ -80,20 +80,20 @@ export default function BreakdownScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.surfacePage }}>
       <Screen>
         <ErrorText>{error}</ErrorText>
 
         {loading && (
           <View style={{ paddingVertical: 20 }}>
-            <ActivityIndicator color={colors.primary} />
+            <ActivityIndicator color={colors.pitch} />
           </View>
         )}
 
         {isOwner && (
           <Card>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <Text style={{ color: colors.text, fontWeight: "600" }}>
+              <Text style={{ color: colors.textPrimary, fontWeight: "600" }}>
                 Puan detayları herkese açık
               </Text>
               <Switch value={isPublic} onValueChange={togglePublic} disabled={toggling} />
@@ -103,7 +103,7 @@ export default function BreakdownScreen() {
 
         {players.map((p) => (
           <Card key={p.userId}>
-            <Text style={{ fontWeight: "700", color: colors.text, marginBottom: 6 }}>
+            <Text style={{ fontWeight: "700", color: colors.textPrimary, marginBottom: 6 }}>
               {p.name} ({p.voteCount} oy)
             </Text>
             {SKILLS.map((s) => {
@@ -111,11 +111,11 @@ export default function BreakdownScreen() {
               if (!b || b.voteCount === 0) return null;
               return (
                 <View key={s.key} style={{ marginTop: 6 }}>
-                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: "600" }}>
+                  <Text style={{ color: colors.textPrimary, fontSize: 13, fontWeight: "600" }}>
                     {s.label}: {b.average}
                   </Text>
                   {b.votes.map((v) => (
-                    <Text key={v.voterId} style={{ color: colors.muted, fontSize: 12 }}>
+                    <Text key={v.voterId} style={{ color: colors.textSecondary, fontSize: 12 }}>
                       {v.voterName}: {v.score}
                     </Text>
                   ))}

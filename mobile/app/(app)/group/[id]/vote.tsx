@@ -101,9 +101,9 @@ export default function VoteScreen() {
 
   if (target) {
     return (
-      <ScrollView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ScrollView style={{ flex: 1, backgroundColor: colors.surfacePage }}>
         <Screen>
-          <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 12, color: colors.text }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 12, color: colors.textPrimary }}>
             {target.name} için oy ver
           </Text>
           <ErrorText>{error}</ErrorText>
@@ -111,7 +111,7 @@ export default function VoteScreen() {
           <Card>
             {SKILLS.map((s) => (
               <View key={s.key} style={{ marginBottom: 14 }}>
-                <Text style={{ color: colors.text, marginBottom: 4 }}>
+                <Text style={{ color: colors.textPrimary, marginBottom: 4 }}>
                   {s.label}: {scores[s.key]}
                 </Text>
                 <Slider
@@ -120,14 +120,14 @@ export default function VoteScreen() {
                   step={1}
                   value={scores[s.key]}
                   onValueChange={(v) => setScores((prev) => ({ ...prev, [s.key]: v }))}
-                  minimumTrackTintColor={colors.primary}
+                  minimumTrackTintColor={colors.pitch}
                 />
               </View>
             ))}
           </Card>
 
           <Card>
-            <Text style={{ fontWeight: "600", marginBottom: 8, color: colors.text }}>
+            <Text style={{ fontWeight: "600", marginBottom: 8, color: colors.textPrimary }}>
               Mevki (önce birincil, sonra ikincil seç)
             </Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -143,15 +143,15 @@ export default function VoteScreen() {
                       paddingHorizontal: 12,
                       borderRadius: 999,
                       borderWidth: 1,
-                      borderColor: isPrimary || isSecondary ? colors.primary : colors.border,
+                      borderColor: isPrimary || isSecondary ? colors.pitch : colors.borderDefault,
                       backgroundColor: isPrimary
-                        ? colors.primary
+                        ? colors.pitch
                         : isSecondary
                         ? "#DCFCE7"
                         : "#fff",
                     }}
                   >
-                    <Text style={{ color: isPrimary ? "#fff" : colors.text, fontSize: 13 }}>
+                    <Text style={{ color: isPrimary ? "#fff" : colors.textPrimary, fontSize: 13 }}>
                       {p.label}
                       {isPrimary ? " (1.)" : isSecondary ? " (2.)" : ""}
                     </Text>
@@ -170,15 +170,15 @@ export default function VoteScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.surfacePage }}>
       <Screen>
         <ErrorText>{error}</ErrorText>
-        <Text style={{ color: colors.muted, marginBottom: 12 }}>
+        <Text style={{ color: colors.textSecondary, marginBottom: 12 }}>
           Bir üyeye dokunarak yetenek ve mevki oyu ver. Daha önce oy verdiklerini tekrar
           düzenleyebilirsin.
         </Text>
         {!loading && members.length === 0 && (
-          <Text style={{ color: colors.muted }}>Oy verebileceğin başka üye yok.</Text>
+          <Text style={{ color: colors.textSecondary }}>Oy verebileceğin başka üye yok.</Text>
         )}
         {members.map((m) => {
           const voted = votedTargetIds.has(m.id);
@@ -186,8 +186,8 @@ export default function VoteScreen() {
             <Pressable key={m.id} onPress={() => openTarget(m)}>
               <Card>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <Text style={{ fontWeight: "600", color: colors.text }}>{m.name}</Text>
-                  <Text style={{ color: voted ? colors.primary : colors.muted, fontSize: 13 }}>
+                  <Text style={{ fontWeight: "600", color: colors.textPrimary }}>{m.name}</Text>
+                  <Text style={{ color: voted ? colors.pitch : colors.textSecondary, fontSize: 13 }}>
                     {voted ? "Oy verildi ✓" : "Oy ver"}
                   </Text>
                 </View>

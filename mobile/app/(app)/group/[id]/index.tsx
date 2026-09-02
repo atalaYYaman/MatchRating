@@ -109,7 +109,7 @@ export default function GroupScreen() {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
+      style={{ flex: 1, backgroundColor: colors.surfacePage }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Screen>
@@ -117,10 +117,10 @@ export default function GroupScreen() {
 
         {group && (
           <Card>
-            <Text style={{ fontSize: 18, fontWeight: "700", color: colors.text }}>
+            <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary }}>
               {group.name}
             </Text>
-            <Text style={{ color: colors.muted, marginTop: 4 }}>
+            <Text style={{ color: colors.textSecondary, marginTop: 4 }}>
               Davet kodu: {group.invite_code}
               {isOwner ? " · Yöneticisin" : ""}
             </Text>
@@ -149,13 +149,13 @@ export default function GroupScreen() {
           </View>
         </View>
 
-        <Text style={{ fontWeight: "700", marginBottom: 8, color: colors.text }}>
+        <Text style={{ fontWeight: "700", marginBottom: 8, color: colors.textPrimary }}>
           Üyeler ({members.length})
         </Text>
         <ErrorText>{actionError}</ErrorText>
         {loading && (
           <View style={{ paddingVertical: 20 }}>
-            <ActivityIndicator color={colors.primary} />
+            <ActivityIndicator color={colors.pitch} />
           </View>
         )}
         {members.map((m) => {
@@ -194,13 +194,13 @@ export default function GroupScreen() {
               ) : (
                 <View>
                   <View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}>
-                    <Text style={{ fontWeight: "600", color: colors.text }}>{m.name}</Text>
+                    <Text style={{ fontWeight: "600", color: colors.textPrimary }}>{m.name}</Text>
                     {isGroupOwner && (
                       <Text
                         style={{
                           marginLeft: 6,
                           fontSize: 11,
-                          color: colors.primary,
+                          color: colors.pitch,
                           fontWeight: "700",
                         }}
                       >
@@ -209,11 +209,11 @@ export default function GroupScreen() {
                     )}
                   </View>
                   {m.nickname && m.account_name && m.nickname !== m.account_name && (
-                    <Text style={{ color: colors.muted, fontSize: 12 }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
                       ({m.account_name})
                     </Text>
                   )}
-                  <Text style={{ color: colors.muted, marginTop: 2 }}>
+                  <Text style={{ color: colors.textSecondary, marginTop: 2 }}>
                     {r?.hasVotes
                       ? `Güç: ${r.overall} · ${positionLabel(r.primaryPosition)} / ${positionLabel(
                           r.secondaryPosition
