@@ -88,6 +88,16 @@ CREATE TABLE IF NOT EXISTS matches (
 
 CREATE INDEX IF NOT EXISTS idx_matches_group ON matches (group_id, created_at DESC);
 
+-- Mac sonucu. 'dis' maclarda home = bizim takim, away = rakip; 'ic' maclarda
+-- iki taraf da grup icinden (ornek: Yesiller / Beyazlar), bu yuzden galibiyet
+-- istatistigi yalnizca 'dis' maclardan hesaplanir.
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS home_score SMALLINT;
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS away_score SMALLINT;
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS home_label TEXT;
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS away_label TEXT;
+-- Yoklamanin kapandigi an; bos ise mac saatine kadar acik.
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS rsvp_deadline TIMESTAMPTZ;
+
 -- Anket secenekleri: her satir bir (gun+saat, konum) kombinasyonu.
 CREATE TABLE IF NOT EXISTS match_options (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
