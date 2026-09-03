@@ -35,7 +35,7 @@ type Draft = {
   weakness: SkillKey | null;
 };
 
-const NEUTRAL = 7;
+const NEUTRAL = 5;
 
 export default function RateMatchScreen() {
   const { id, matchId } = useLocalSearchParams<{ id: string; matchId: string }>();
@@ -128,7 +128,7 @@ export default function RateMatchScreen() {
       <Card>
         <Text style={[type.bodyS, { color: colors.textSecondary }]}>
           Her oyuncuya 10 üzerinden puan ver ve maçta öne çıkan bir güçlü, bir zayıf
-          yönünü seç. 7 nötr kabul edilir: 7&apos;nin üstü güçlü yönü yükseltir, altı
+          yönünü seç. 5 nötr kabul edilir: 5&apos;in üstü güçlü yönü yükseltir, altı
           zayıf yönü düşürür.
         </Text>
         <Text

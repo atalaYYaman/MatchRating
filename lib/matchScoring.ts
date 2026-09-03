@@ -4,22 +4,18 @@ import { SKILL_KEYS, SkillKey } from "@/lib/skills";
 //
 // - Her oyuncu, ayni maca katilan digerlerini 10 uzerinden puanlar ve
 //   1 guclu + 1 zayif yon secer (6 temel yetenek arasindan).
-// - Oyuncunun aldigi puanlarin ortalamasinin 7'ye uzakligi yetenek
+// - Oyuncunun aldigi puanlarin ortalamasinin 5'e uzakligi yetenek
 //   puanlarina yansir. Fark, en cok oy alan iki yon arasinda 2:1 oraninda
 //   paylastirilir (ornek: -3 -> -2 / -1, -2.4 -> -1.6 / -0.8).
 // - Puanlamasini zamaninda tamamlamayan oyuncu oylamadan cikarilir ve tum
 //   yeteneklerinden NO_RATING_PENALTY kadar dusulur.
 
-export const NEUTRAL_MATCH_SCORE = 7;
+export const NEUTRAL_MATCH_SCORE = 5;
 // Mac bitiminden itibaren puanlama penceresi.
 export const RATING_DEADLINE_HOURS = 12;
 export const NO_RATING_PENALTY = 1;
 export const MIN_MATCH_SCORE = 0;
 export const MAX_MATCH_SCORE = 10;
-// Notr 7 oldugu icin ham fark [-7, +3] araligina dusuyordu: kotu bir mac
-// iyi bir macin iki katindan fazla etkiliyor, herkes zamanla asagi
-// suruklenirdi. Farki simetrik olacak sekilde kirpiyoruz.
-export const MAX_MATCH_DELTA = 3;
 
 export function isValidMatchScore(value: number): boolean {
   return (
@@ -29,10 +25,6 @@ export function isValidMatchScore(value: number): boolean {
 
 function round2(value: number) {
   return Math.round(value * 100) / 100;
-}
-
-function clampDelta(value: number) {
-  return Math.max(-MAX_MATCH_DELTA, Math.min(MAX_MATCH_DELTA, value));
 }
 
 // Ayni sayida oy alan yetenekler icin SKILL_KEYS sirasi belirleyici olur;
@@ -113,10 +105,10 @@ export function computeMatchAdjustments(
 
     const average =
       received.reduce((sum, r) => sum + Number(r.score), 0) / received.length;
-    const distance = clampDelta(average - NEUTRAL_MATCH_SCORE);
+    const distance = average - NEUTRAL_MATCH_SCORE;
     if (Math.abs(distance) < 0.001) continue;
 
-    // Puan 7'nin ustundeyse guclu yonler yukselir, altindaysa zayif yonler duser.
+    // Puan 5'in ustundeyse guclu yonler yukselir, altindaysa zayif yonler duser.
     const ranked = rankSkillVotes(
       received.map((r) => (distance > 0 ? r.strength_skill : r.weakness_skill))
     );
