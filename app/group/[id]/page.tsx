@@ -186,6 +186,7 @@ export default function GroupPage() {
       <div className="row" style={{ marginBottom: 20 }}>
         <Link href={`/group/${groupId}/vote`}><button>Oylama Yap</button></Link>
         <Link href={`/group/${groupId}/teams`}><button className="secondary">Takımları Oluştur</button></Link>
+        <Link href={`/group/${groupId}/seasons`}><button className="secondary">Sezonlar</button></Link>
         {(isOwner || ratingsBreakdownPublic) && (
           <Link href={`/group/${groupId}/breakdown`}>
             <button className="secondary">Puan Detayları</button>

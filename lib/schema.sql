@@ -216,3 +216,46 @@ CREATE TABLE IF NOT EXISTS match_squad_players (
 CREATE INDEX IF NOT EXISTS idx_squad_players_squad ON match_squad_players (squad_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_squad_players_match_user
   ON match_squad_players (match_id, user_id) WHERE user_id IS NOT NULL;
+
+-- ==========================================================================
+-- SEZONLAR
+-- ==========================================================================
+
+-- Her grubun her an tek bir aktif sezonu olur. Yonetici elle kapatinca
+-- o anki durum (siralamalar, G-B-M, MVP) summary'ye dondurulur ve otomatik
+-- adli yeni bir sezon acilir. Yetenek puanlari/oylari sezonlar arasi korunur;
+-- sezon yalnizca maclari ve galibiyet kaydini kapsayan bir zaman penceresidir.
+CREATE TABLE IF NOT EXISTS seasons (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'closed')),
+  summary JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  closed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_seasons_group ON seasons (group_id, created_at DESC);
+-- Grup basina en fazla bir aktif sezon.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_seasons_one_active
+  ON seasons (group_id) WHERE status = 'active';
+
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS season_id UUID REFERENCES seasons(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_matches_season ON matches (season_id);
+
+-- Backfill: aktif sezonu olmayan her gruba "Sezon 1" ekle, ardindan sezonu
+-- olmayan maclari o gruptaki aktif sezona bagla. Idempotent (db:init her
+-- calistiginda guvenle tekrarlanabilir).
+INSERT INTO seasons (group_id, name, status)
+SELECT g.id, 'Sezon 1', 'active'
+FROM groups g
+WHERE NOT EXISTS (
+  SELECT 1 FROM seasons s WHERE s.group_id = g.id AND s.status = 'active'
+);
+
+UPDATE matches m
+SET season_id = s.id
+FROM seasons s
+WHERE m.season_id IS NULL
+  AND s.group_id = m.group_id
+  AND s.status = 'active';

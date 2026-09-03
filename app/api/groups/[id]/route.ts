@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { computeGroupRecords } from "@/lib/records";
+import { getActiveSeason } from "@/lib/seasons";
 
 async function assertMember(groupId: string, userId: string) {
   const result = await sql`
@@ -14,8 +15,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
 
-  // Uc sorgu birbirinden bagimsiz; ardisik degil paralel calistirarak
-  // uzak veritabanina gidiş-dönüş sayisini 3'ten 1'e indiriyoruz.
+  // Sorgular birbirinden bagimsiz; ardisik degil paralel calistirarak
+  // uzak veritabanina gidiş-dönüş sayisini azaltiyoruz. G-B-M kaydi aktif
+  // sezona gore hesaplanir.
+  const season = await getActiveSeason(params.id);
   const [isMember, groupResult, membersResult, records] = await Promise.all([
     assertMember(params.id, session.userId),
     sql`
@@ -34,7 +37,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       WHERE gm.group_id = ${params.id}
       ORDER BY gm.joined_at ASC
     `,
-    computeGroupRecords(params.id),
+    computeGroupRecords(params.id, season.id),
   ]);
 
   if (!isMember) return NextResponse.json({ error: "Bu takıma erişiminiz yok." }, { status: 403 });
@@ -51,6 +54,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   return NextResponse.json({
     group,
     members,
+    activeSeason: { id: season.id, name: season.name },
     // Istemci "takimdan ayril" icin kendi uyelik satirini hedefliyor.
     meId: session.userId,
     isOwner: group.owner_id === session.userId,

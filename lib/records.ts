@@ -25,8 +25,12 @@ function bump(map: Map<string, UserRecord>, userId: string, result: "win" | "dra
 // Grup icindeki tum uyelerin galibiyet/beraberlik/maglubiyet sayisi.
 // 'dis' maclarda katilan herkes ev sahibi (biz) sayilir. 'ic' maclarda
 // sonuc, kadroda hangi tarafta oldugunuza gore hesaplanir (kadro yoksa o
-// mac sayilmaz).
-export async function computeGroupRecords(groupId: string): Promise<Map<string, UserRecord>> {
+// mac sayilmaz). seasonId verilirse yalnizca o sezonun maclari sayilir.
+export async function computeGroupRecords(
+  groupId: string,
+  seasonId?: string | null
+): Promise<Map<string, UserRecord>> {
+  const bySeason = seasonId != null;
   const [disRows, icRows] = await Promise.all([
     sql`
       SELECT a.user_id, m.home_score, m.away_score
@@ -34,6 +38,7 @@ export async function computeGroupRecords(groupId: string): Promise<Map<string, 
       JOIN match_attendance a ON a.match_id = m.id AND a.status = 'yes'
       WHERE m.group_id = ${groupId} AND m.match_kind = 'dis' AND m.status = 'completed'
         AND m.home_score IS NOT NULL AND m.away_score IS NOT NULL
+        AND (${!bySeason} OR m.season_id = ${seasonId ?? null})
     `,
     sql`
       SELECT sp.user_id, sq.side, m.home_score, m.away_score
@@ -42,6 +47,7 @@ export async function computeGroupRecords(groupId: string): Promise<Map<string, 
       JOIN match_squad_players sp ON sp.squad_id = sq.id AND sp.user_id IS NOT NULL
       WHERE m.group_id = ${groupId} AND m.match_kind = 'ic' AND m.status = 'completed'
         AND m.home_score IS NOT NULL AND m.away_score IS NOT NULL
+        AND (${!bySeason} OR m.season_id = ${seasonId ?? null})
     `,
   ]);
 

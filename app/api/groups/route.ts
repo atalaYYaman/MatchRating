@@ -57,5 +57,10 @@ export async function POST(req: NextRequest) {
     INSERT INTO group_members (group_id, user_id) VALUES (${group.id}, ${session.userId})
   `;
 
+  // Her grup ilk sezonuyla baslar; maclar bu sezona baglanir.
+  await sql`
+    INSERT INTO seasons (group_id, name, status) VALUES (${group.id}, 'Sezon 1', 'active')
+  `;
+
   return NextResponse.json({ group });
 }

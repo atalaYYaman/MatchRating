@@ -42,11 +42,17 @@ export default function AppLayout() {
         <Stack.Screen name="group/[id]/vote" options={{ title: "Oylama Yap" }} />
         <Stack.Screen name="group/[id]/teams" options={{ title: "Takımları Oluştur" }} />
         <Stack.Screen name="group/[id]/breakdown" options={{ title: "Puan Detayı" }} />
+        <Stack.Screen name="group/[id]/seasons" options={{ title: "Sezonlar" }} />
+        <Stack.Screen name="group/[id]/season/[seasonId]" options={{ title: "Sezon" }} />
         <Stack.Screen name="group/[id]/match/new" options={{ title: "Yeni Maç" }} />
         <Stack.Screen name="group/[id]/match/[matchId]/index" options={{ title: "Maç" }} />
         <Stack.Screen
           name="group/[id]/match/[matchId]/rate"
           options={{ title: "Maçı Oyla" }}
+        />
+        <Stack.Screen
+          name="group/[id]/match/[matchId]/squads"
+          options={{ title: "Kadrolar" }}
         />
       </Stack>
     </ActiveGroupProvider>

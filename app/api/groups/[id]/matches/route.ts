@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { isGroupMember, isGroupOwner } from "@/lib/groupAccess";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
+import { getActiveSeason } from "@/lib/seasons";
 
 const MAX_POLL_OPTIONS = 12;
 
@@ -93,6 +94,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     );
   }
 
+  const season = await getActiveSeason(params.id);
+
   const body = await req.json().catch(() => ({}));
   const mode = body?.mode;
   const matchKind = body?.matchKind;
@@ -128,10 +131,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const result = await sql`
       INSERT INTO matches
         (group_id, created_by, mode, match_kind, required_players, note,
-         scheduled_at, location, status)
+         scheduled_at, location, status, season_id)
       VALUES
         (${params.id}, ${session.userId}, 'fixed', ${matchKind}, ${requiredPlayers},
-         ${note}, ${scheduledAt}, ${location}, 'scheduled')
+         ${note}, ${scheduledAt}, ${location}, 'scheduled', ${season.id})
       RETURNING id, mode, match_kind, scheduled_at, location, status, created_at
     `;
     return NextResponse.json({ match: result.rows[0] });
@@ -147,10 +150,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const result = await sql`
     INSERT INTO matches
-      (group_id, created_by, mode, match_kind, required_players, note, status)
+      (group_id, created_by, mode, match_kind, required_players, note, status, season_id)
     VALUES
       (${params.id}, ${session.userId}, 'poll', ${matchKind}, ${requiredPlayers},
-       ${note}, 'poll_open')
+       ${note}, 'poll_open', ${season.id})
     RETURNING id, mode, match_kind, status, created_at
   `;
   const match = result.rows[0];

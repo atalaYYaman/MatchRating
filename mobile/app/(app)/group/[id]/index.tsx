@@ -214,6 +214,15 @@ export default function GroupScreen() {
             />
           </View>
         </View>
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Button
+              title="Sezonlar"
+              variant="secondary"
+              onPress={() => router.push(`/group/${id}/seasons`)}
+            />
+          </View>
+        </View>
 
         <Text style={{ fontWeight: "700", marginBottom: 8, color: colors.textPrimary }}>
           Üyeler ({members.length})
