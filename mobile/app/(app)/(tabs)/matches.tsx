@@ -16,6 +16,7 @@ import { api, ApiError } from "../../../lib/api";
 import { useActiveGroup } from "../../../lib/active-group";
 import { useAuth } from "../../../lib/auth-context";
 import { clockTime, countdownLabel, shortDate } from "../../../lib/format";
+import { MatchPhase, PHASE_LABEL, PHASE_TONE } from "../../../lib/constants";
 import { border, colors, radius, space, type } from "../../../lib/theme";
 
 type MatchRow = {
@@ -28,19 +29,18 @@ type MatchRow = {
   scheduled_at: string | null;
   location: string | null;
   status: "poll_open" | "scheduled" | "completed" | "cancelled";
+  phase: MatchPhase;
   attending_count: number;
   poll_response_count: number;
 };
 
-const STATUS: Record<
-  MatchRow["status"],
-  { label: string; tone: "neutral" | "brand" | "accent" | "danger" }
-> = {
-  poll_open: { label: "Anket açık", tone: "accent" },
-  scheduled: { label: "Planlandı", tone: "brand" },
-  completed: { label: "Tamamlandı", tone: "neutral" },
-  cancelled: { label: "İptal", tone: "danger" },
-};
+// Dort cip yeter: hepsi, senden bir sey beklenenler, gelecek, gecmis.
+const FILTERS = [
+  { key: "all", label: "Tümü", phases: null },
+  { key: "rating", label: "Puanlanıyor", phases: ["rating"] },
+  { key: "upcoming", label: "Yaklaşan", phases: ["poll", "scheduled", "playing"] },
+  { key: "past", label: "Tamamlandı", phases: ["completed", "cancelled"] },
+] as const;
 
 export default function MatchesScreen() {
   const { activeGroup, isAll, scopeId, groups } = useActiveGroup();
@@ -50,6 +50,7 @@ export default function MatchesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
 
   // Kapsam degistiginde onceki istek hala ucuyor olabilir; gec donen eski
   // yanit yenisini ezmesin diye istegin kapsami ile guncel kapsam karsilastirilir.
@@ -87,6 +88,13 @@ export default function MatchesScreen() {
   // o takim varsayilir, birden fazlaysa buton gizlenir.
   const newMatchTarget = activeGroup ?? (groups.length === 1 ? groups[0] : null);
 
+  const activeFilter = FILTERS.find((f) => f.key === filter);
+  const visible = activeFilter?.phases
+    ? matches.filter((m) =>
+        (activeFilter.phases as readonly string[]).includes(m.phase)
+      )
+    : matches;
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.surfacePage }}
@@ -109,13 +117,35 @@ export default function MatchesScreen() {
         />
       )}
 
+      <View style={s.filterRow}>
+        {FILTERS.map((f) => {
+          const on = filter === f.key;
+          return (
+            <Pressable
+              key={f.key}
+              onPress={() => setFilter(f.key)}
+              style={[s.filterChip, on && s.filterChipOn]}
+            >
+              <Text
+                style={[
+                  type.bodySMedium,
+                  { color: on ? colors.textOnBrand : colors.ink },
+                ]}
+              >
+                {f.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       {loading && (
         <View style={{ paddingVertical: space[8] }}>
           <ActivityIndicator color={colors.pitch} />
         </View>
       )}
 
-      {!loading && matches.length === 0 && (
+      {!loading && visible.length === 0 && (
         <Card>
           <Text style={[type.bodyM, { color: colors.textSecondary }]}>
             {isAll
@@ -125,8 +155,7 @@ export default function MatchesScreen() {
         </Card>
       )}
 
-      {matches.map((m) => {
-        const status = STATUS[m.status];
+      {visible.map((m) => {
         const upcoming =
           m.scheduled_at && new Date(m.scheduled_at).getTime() > Date.now();
         return (
@@ -136,7 +165,7 @@ export default function MatchesScreen() {
           >
             <View style={s.card}>
               <View style={s.head}>
-                <Badge tone={status.tone}>{status.label}</Badge>
+                <Badge tone={PHASE_TONE[m.phase]}>{PHASE_LABEL[m.phase]}</Badge>
                 <Text style={[type.bodyS, { color: colors.textTertiary }]}>
                   {isAll ? `${m.group_name} · ` : ""}
                   {m.match_kind === "ic" ? "Takım içi" : "Dış rakip"}
@@ -184,6 +213,23 @@ export default function MatchesScreen() {
 }
 
 const s = {
+  filterRow: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    gap: space[2],
+  },
+  filterChip: {
+    paddingVertical: space[2],
+    paddingHorizontal: space[3],
+    borderRadius: radius.pill,
+    borderWidth: border.width,
+    borderColor: colors.borderDefault,
+    backgroundColor: colors.surfaceCard,
+  },
+  filterChipOn: {
+    backgroundColor: colors.pitch,
+    borderColor: colors.pitch,
+  },
   eyebrow: {
     ...type.labelS,
     textTransform: "uppercase" as const,

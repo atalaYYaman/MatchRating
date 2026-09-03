@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Card, ErrorText, Eyebrow, ScoreBadge } from "@/components/ui";
+import { Badge, Card, ErrorText, Eyebrow, InlineMessage, ScoreBadge } from "@/components/ui";
 import { api, ApiError } from "@/lib/client-api";
 import { SKILLS, SkillKey } from "@/lib/skills";
 
@@ -12,6 +12,8 @@ type Detail = {
     open: boolean;
     played: boolean;
     participants: { id: string; name: string }[];
+    // Kendin haric puanlanacak oyuncular (sunucu ayiriyor).
+    targets: { id: string; name: string }[];
     myRatings: {
       target_id: string;
       score: number;
@@ -39,12 +41,12 @@ export default function RateMatchPage() {
   const load = useCallback(async () => {
     try {
       const res = await api.get<Detail>(`/api/groups/${groupId}/matches/${matchId}`);
-      setParticipants(res.rating.participants);
+      setParticipants(res.rating.targets);
       setDone(new Set(res.rating.myRatings.map((r) => r.target_id)));
 
       // Daha once puanladiklarim formda gorunsun ki duzeltilebilsin.
       const initial: Record<string, Draft> = {};
-      for (const p of res.rating.participants) {
+      for (const p of res.rating.targets) {
         const mine = res.rating.myRatings.find((r) => r.target_id === p.id);
         initial[p.id] = mine
           ? {
@@ -83,6 +85,13 @@ export default function RateMatchPage() {
       setError("En az bir oyuncu için güçlü ve zayıf yön seç.");
       return;
     }
+
+    if (
+      !confirm(
+        `${payload.length} oyuncu için puanın gönderilecek. Puanlar bir kez verilir, sonradan değiştiremezsin. Onaylıyor musun?`
+      )
+    )
+      return;
 
     setSaving(true);
     setError(null);
@@ -179,9 +188,14 @@ export default function RateMatchPage() {
       )}
 
       {participants.length > 0 && (
-        <button className="full" onClick={submit} disabled={saving}>
-          Puanlamayı gönder
-        </button>
+        <>
+          <InlineMessage tone="danger">
+            Puanlar bir kez verilir; gönderdikten sonra değiştiremezsin.
+          </InlineMessage>
+          <button className="full" onClick={submit} disabled={saving}>
+            Puanlamayı gönder
+          </button>
+        </>
       )}
     </div>
   );

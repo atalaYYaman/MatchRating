@@ -1,9 +1,6 @@
 import { sql } from "@/lib/db";
-import {
-  computeMatchAdjustments,
-  RATING_DEADLINE_HOURS,
-  RatingRow,
-} from "@/lib/matchScoring";
+import { computeMatchAdjustments, RatingRow } from "@/lib/matchScoring";
+import { ratingDeadline } from "@/lib/matchStatus";
 
 // Mac sonuclarinin veritabani katmani. Puanlama matematigi lib/matchScoring.ts.
 export {
@@ -19,8 +16,8 @@ export type ProcessResult =
   | { processed: false; reason: string }
   | { processed: true; adjustments: number; excluded: string[] };
 
-// Mac oynandiktan sonra, herkes puanlamasini tamamladiysa ya da 24 saat
-// gectiyse sonuclari isler. Ayri bir cron gerekmesin diye mac okundugunda ya
+// Mac oynandiktan sonra, herkes puanlamasini tamamladiysa ya da puanlama
+// penceresi (mac bitisinden itibaren 12 saat) kapandiysa sonuclari isler. Ayri bir cron gerekmesin diye mac okundugunda ya
 // da puanlama gonderildiginde cagrilir; islenmis maci tekrar islemez.
 export async function maybeProcessMatchRatings(
   matchId: string
@@ -81,8 +78,7 @@ export async function maybeProcessMatchRatings(
     (id) => (ratedTargets.get(id)?.size ?? 0) < required
   );
 
-  const deadlinePassed =
-    Date.now() >= scheduledAt.getTime() + RATING_DEADLINE_HOURS * 60 * 60 * 1000;
+  const deadlinePassed = Date.now() >= ratingDeadline(scheduledAt).getTime();
 
   if (incomplete.length > 0 && !deadlinePassed) {
     return { processed: false, reason: "waiting_for_ratings" };

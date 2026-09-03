@@ -19,7 +19,8 @@ type RatingInput = {
 };
 
 // POST: { ratings: [{ targetId, score, strengthSkill, weaknessSkill }] }
-// Tek seferde birden fazla oyuncu puanlanabilir; tekrar gonderilirse guncellenir.
+// Tek seferde birden fazla oyuncu puanlanabilir. Bir oyuncu yalnizca bir kez
+// puanlanir; tekrar denenirse 409 doner.
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string; matchId: string } }
@@ -71,6 +72,14 @@ export async function POST(
     );
   }
 
+  // Mac sonu puani bir kez verilir; digerlerinin oyunu gorup fikir
+  // degistirmeyi engeller.
+  const existing = await sql`
+    SELECT target_id FROM match_ratings
+    WHERE match_id = ${params.matchId} AND rater_id = ${session.userId}
+  `;
+  const alreadyRated = new Set(existing.rows.map((r) => r.target_id as string));
+
   const body = await req.json().catch(() => ({}));
   if (!Array.isArray(body?.ratings) || body.ratings.length === 0) {
     return NextResponse.json({ error: "Puanlama verisi eksik." }, { status: 400 });
@@ -99,6 +108,12 @@ export async function POST(
       return NextResponse.json(
         { error: "Aynı oyuncu birden fazla kez gönderildi." },
         { status: 400 }
+      );
+    }
+    if (alreadyRated.has(targetId)) {
+      return NextResponse.json(
+        { error: "Bu oyuncuyu zaten puanladın. Puanlar bir kez verilir." },
+        { status: 409 }
       );
     }
     if (!isValidMatchScore(score)) {
@@ -151,11 +166,7 @@ export async function POST(
     `INSERT INTO match_ratings
        (match_id, rater_id, target_id, score, strength_skill, weakness_skill)
      VALUES ${values.join(", ")}
-     ON CONFLICT (match_id, rater_id, target_id)
-     DO UPDATE SET score = EXCLUDED.score,
-                   strength_skill = EXCLUDED.strength_skill,
-                   weakness_skill = EXCLUDED.weakness_skill,
-                   created_at = now()`,
+     ON CONFLICT (match_id, rater_id, target_id) DO NOTHING`,
     insertParams
   );
 

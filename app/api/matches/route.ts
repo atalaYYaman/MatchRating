@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
+import { matchPhase, phaseRank } from "@/lib/matchStatus";
+
+// Iptal edilen maclar listelerden hemen duser; bu sureden sonra kalici
+// olarak silinir ki gecmis kalabalik olmasin.
+const CANCELLED_RETENTION_DAYS = 7;
 
 // GET /api/matches            -> kullanicinin tum takimlarindaki maclar
 // GET /api/matches?groupId=X  -> yalnizca o takim
@@ -12,6 +17,14 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
 
   const groupId = req.nextUrl.searchParams.get("groupId");
+
+  // Eskimis iptaller temizlenir. Ayri bir zamanlayici olmadigi icin, tipki
+  // puan islemede oldugu gibi, liste okunurken firsatci sekilde yapilir.
+  await sql`
+    DELETE FROM matches
+    WHERE status = 'cancelled'
+      AND created_at < now() - (${CANCELLED_RETENTION_DAYS} || ' days')::interval
+  `;
 
   const matchesRes = await sql`
     SELECT m.id, m.group_id, g.name AS group_name, g.owner_id,
@@ -27,11 +40,7 @@ export async function GET(req: NextRequest) {
     LEFT JOIN match_poll_responses p ON p.match_id = m.id
     WHERE (${groupId}::uuid IS NULL OR m.group_id = ${groupId}::uuid)
     GROUP BY m.id, g.name, g.owner_id
-    ORDER BY
-      -- Yaklasan maclar once (en yakin ustte), sonra gecmisler (en yeni ustte)
-      CASE WHEN m.scheduled_at > now() THEN 0 ELSE 1 END,
-      CASE WHEN m.scheduled_at > now() THEN m.scheduled_at END ASC,
-      COALESCE(m.scheduled_at, m.created_at) DESC
+    ORDER BY COALESCE(m.scheduled_at, m.created_at) DESC
     LIMIT 100
   `;
 
@@ -60,10 +69,30 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({
-    matches: matchesRes.rows.map((m) => ({
-      ...m,
-      isOwner: m.owner_id === session.userId,
-    })),
+  // Siralama faza gore: once senden bir sey beklenenler (puanlanacak mac),
+  // en sonda bilgi tasimayanlar (tamamlanmis, iptal).
+  const withPhase: (Record<string, unknown> & {
+    phase: ReturnType<typeof matchPhase>;
+    scheduled_at: string | null;
+    created_at: string;
+  })[] = matchesRes.rows.map((m) => ({
+    ...m,
+    isOwner: m.owner_id === session.userId,
+    phase: matchPhase(
+      m as { status: string; scheduled_at: string | null; ratings_processed_at: string | null }
+    ),
+    scheduled_at: (m.scheduled_at as string | null) ?? null,
+    created_at: m.created_at as string,
+  }));
+
+  withPhase.sort((a, b) => {
+    const rank = phaseRank(a.phase) - phaseRank(b.phase);
+    if (rank !== 0) return rank;
+    const at = new Date((a.scheduled_at ?? a.created_at) as string).getTime();
+    const bt = new Date((b.scheduled_at ?? b.created_at) as string).getTime();
+    // Yaklasan maclarda en yakin ustte, gecmislerde en yeni ustte.
+    return a.phase === "scheduled" || a.phase === "poll" ? at - bt : bt - at;
   });
+
+  return NextResponse.json({ matches: withPhase });
 }

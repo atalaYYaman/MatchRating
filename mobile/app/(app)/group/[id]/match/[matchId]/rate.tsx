@@ -1,7 +1,7 @@
 import Slider from "@react-native-community/slider";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import {
   Badge,
   Button,
@@ -18,6 +18,8 @@ type Detail = {
     open: boolean;
     played: boolean;
     participants: { id: string; name: string }[];
+    // Kendin haric puanlanacak oyuncular (sunucu ayiriyor).
+    targets: { id: string; name: string }[];
     myRatings: {
       target_id: string;
       score: number;
@@ -48,12 +50,12 @@ export default function RateMatchScreen() {
     try {
       const res = await api.get<Detail>(`/api/groups/${id}/matches/${matchId}`);
       const rated = new Set(res.rating.myRatings.map((r) => r.target_id));
-      setParticipants(res.rating.participants);
+      setParticipants(res.rating.targets);
       setDone(rated);
 
       // Daha once puanladiklarim formda gorunsun ki duzeltilebilsin.
       const initial: Record<string, Draft> = {};
-      for (const p of res.rating.participants) {
+      for (const p of res.rating.targets) {
         const mine = res.rating.myRatings.find((r) => r.target_id === p.id);
         initial[p.id] = mine
           ? {
@@ -93,6 +95,17 @@ export default function RateMatchScreen() {
       return;
     }
 
+    Alert.alert(
+      "Puanları gönder",
+      `${payload.length} oyuncu için puanın gönderilecek. Puanlar bir kez verilir, sonradan değiştiremezsin.`,
+      [
+        { text: "Vazgeç", style: "cancel" },
+        { text: "Gönder", onPress: () => send(payload) },
+      ]
+    );
+  }
+
+  async function send(payload: unknown[]) {
     setSaving(true);
     setError(null);
     try {
@@ -117,6 +130,14 @@ export default function RateMatchScreen() {
           Her oyuncuya 10 üzerinden puan ver ve maçta öne çıkan bir güçlü, bir zayıf
           yönünü seç. 7 nötr kabul edilir: 7&apos;nin üstü güçlü yönü yükseltir, altı
           zayıf yönü düşürür.
+        </Text>
+        <Text
+          style={[
+            type.bodySMedium,
+            { color: colors.stateDanger, marginTop: space[3] },
+          ]}
+        >
+          Puanlar bir kez verilir; gönderdikten sonra değiştiremezsin.
         </Text>
       </Card>
 

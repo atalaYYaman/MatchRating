@@ -1,7 +1,7 @@
 import Slider from "@react-native-community/slider";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { Button, Card, ErrorText, Screen } from "../../../../components/ui";
 import { api, ApiError } from "../../../../lib/api";
 import { useAuth } from "../../../../lib/auth-context";
@@ -81,6 +81,17 @@ export default function VoteScreen() {
       setError("Birincil ve ikincil mevki seçmelisin.");
       return;
     }
+    Alert.alert(
+      "Oyu gönder",
+      `${target.name} için oyun gönderilecek. Bir oyuncuyu yalnızca bir kez oylayabilirsin, sonradan değiştiremezsin.`,
+      [
+        { text: "Vazgeç", style: "cancel" },
+        { text: "Gönder", onPress: () => sendVote(target) },
+      ]
+    );
+  }
+
+  async function sendVote(target: Member) {
     setSaving(true);
     setError(null);
     try {
@@ -174,8 +185,8 @@ export default function VoteScreen() {
       <Screen>
         <ErrorText>{error}</ErrorText>
         <Text style={{ color: colors.textSecondary, marginBottom: 12 }}>
-          Bir üyeye dokunarak yetenek ve mevki oyu ver. Daha önce oy verdiklerini tekrar
-          düzenleyebilirsin.
+          Bir üyeye dokunarak yetenek ve mevki oyu ver. Her oyuncuyu yalnızca bir kez
+          oylayabilirsin.
         </Text>
         {!loading && members.length === 0 && (
           <Text style={{ color: colors.textSecondary }}>Oy verebileceğin başka üye yok.</Text>
@@ -183,7 +194,7 @@ export default function VoteScreen() {
         {members.map((m) => {
           const voted = votedTargetIds.has(m.id);
           return (
-            <Pressable key={m.id} onPress={() => openTarget(m)}>
+            <Pressable key={m.id} onPress={() => !voted && openTarget(m)} disabled={voted}>
               <Card>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <Text style={{ fontWeight: "600", color: colors.textPrimary }}>{m.name}</Text>
@@ -191,6 +202,11 @@ export default function VoteScreen() {
                     {voted ? "Oy verildi ✓" : "Oy ver"}
                   </Text>
                 </View>
+                {voted && (
+                  <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
+                    Oylar bir kez verilir, değiştirilemez.
+                  </Text>
+                )}
               </Card>
             </Pressable>
           );

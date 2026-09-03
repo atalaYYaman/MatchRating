@@ -129,6 +129,14 @@ export default function VotePage() {
       setError("Birincil ve ikincil mevki seçmelisin.");
       return;
     }
+    const targetMember = teammates.find((t) => t.id === activeTarget);
+    if (
+      !confirm(
+        `${targetMember?.name} için oyun gönderilecek. Bir oyuncuyu yalnızca bir kez oylayabilirsin, sonradan değiştiremezsin. Onaylıyor musun?`
+      )
+    )
+      return;
+
     setSaving(true);
     setError(null);
     try {
@@ -171,7 +179,8 @@ export default function VotePage() {
       <h1>Oylama</h1>
       <p className="muted" style={{ marginTop: 4 }}>
         Takım arkadaşlarını 6 yetenek üzerinden {MIN_SCORE}-{MAX_SCORE} arası puanla;
-        birincil ve ikincil mevkilerini seç.
+        birincil ve ikincil mevkilerini seç. Her oyuncuyu yalnızca bir kez
+        oylayabilirsin.
       </p>
 
       {message && <InlineMessage tone="success">{message}</InlineMessage>}
@@ -200,13 +209,19 @@ export default function VotePage() {
                   <Badge tone="neutral">Bekliyor</Badge>
                 )}
               </div>
-              <button
-                className="secondary full"
-                style={{ marginTop: 12 }}
-                onClick={() => openVoteFor(m.id)}
-              >
-                {voted ? "Puanları güncelle" : "Oyla"}
-              </button>
+              {voted ? (
+                <p className="muted" style={{ margin: "10px 0 0" }}>
+                  Oyunu verdin. Oylar bir kez verilir, değiştirilemez.
+                </p>
+              ) : (
+                <button
+                  className="secondary full"
+                  style={{ marginTop: 12 }}
+                  onClick={() => openVoteFor(m.id)}
+                >
+                  Oyla
+                </button>
+              )}
             </Card>
           );
         }

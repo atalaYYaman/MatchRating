@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Badge, Card, ErrorText, Eyebrow, Field } from "@/components/ui";
 import { api, ApiError } from "@/lib/client-api";
 import { clockTime, countdownLabel, shortDate } from "@/lib/dateFormat";
+import { MatchPhase, PHASE_LABEL } from "@/lib/matchStatus";
 
 type Detail = {
   match: {
@@ -21,6 +22,7 @@ type Detail = {
     away_score: number | null;
   };
   isOwner: boolean;
+  phase: MatchPhase;
   options: { id: string; startsAt: string; location: string; voteCount: number }[];
   myPollResponse: { available: boolean } | null;
   myOptionIds: string[];
@@ -120,14 +122,18 @@ export default function MatchDetailPage() {
 
       <Card raised>
         <div className="row" style={{ justifyContent: "space-between" }}>
-          <Badge tone={isPoll ? "accent" : m.status === "completed" ? "neutral" : "brand"}>
-            {isPoll
-              ? "Anket açık"
-              : m.status === "scheduled"
-              ? "Planlandı"
-              : m.status === "completed"
-              ? "Tamamlandı"
-              : "İptal"}
+          <Badge
+            tone={
+              data.phase === "rating" || data.phase === "poll"
+                ? "accent"
+                : data.phase === "cancelled"
+                ? "danger"
+                : data.phase === "completed"
+                ? "neutral"
+                : "brand"
+            }
+          >
+            {PHASE_LABEL[data.phase]}
           </Badge>
           <span className="muted">
             {m.match_kind === "ic" ? "Takım içi" : "Dış rakip"}

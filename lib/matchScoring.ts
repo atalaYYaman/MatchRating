@@ -11,10 +11,15 @@ import { SKILL_KEYS, SkillKey } from "@/lib/skills";
 //   yeteneklerinden NO_RATING_PENALTY kadar dusulur.
 
 export const NEUTRAL_MATCH_SCORE = 7;
-export const RATING_DEADLINE_HOURS = 24;
+// Mac bitiminden itibaren puanlama penceresi.
+export const RATING_DEADLINE_HOURS = 12;
 export const NO_RATING_PENALTY = 1;
 export const MIN_MATCH_SCORE = 0;
 export const MAX_MATCH_SCORE = 10;
+// Notr 7 oldugu icin ham fark [-7, +3] araligina dusuyordu: kotu bir mac
+// iyi bir macin iki katindan fazla etkiliyor, herkes zamanla asagi
+// suruklenirdi. Farki simetrik olacak sekilde kirpiyoruz.
+export const MAX_MATCH_DELTA = 3;
 
 export function isValidMatchScore(value: number): boolean {
   return (
@@ -24,6 +29,10 @@ export function isValidMatchScore(value: number): boolean {
 
 function round2(value: number) {
   return Math.round(value * 100) / 100;
+}
+
+function clampDelta(value: number) {
+  return Math.max(-MAX_MATCH_DELTA, Math.min(MAX_MATCH_DELTA, value));
 }
 
 // Ayni sayida oy alan yetenekler icin SKILL_KEYS sirasi belirleyici olur;
@@ -104,7 +113,7 @@ export function computeMatchAdjustments(
 
     const average =
       received.reduce((sum, r) => sum + Number(r.score), 0) / received.length;
-    const distance = average - NEUTRAL_MATCH_SCORE;
+    const distance = clampDelta(average - NEUTRAL_MATCH_SCORE);
     if (Math.abs(distance) < 0.001) continue;
 
     // Puan 7'nin ustundeyse guclu yonler yukselir, altindaysa zayif yonler duser.

@@ -63,6 +63,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Oy verilen kişi bu takımda değil." }, { status: 400 });
   }
 
+  // Akran oyu bir kez verilir ve geri alinamaz: sonradan gorup fikir
+  // degistirmek puanlari oynak hale getiriyordu.
+  const already = await sql`
+    SELECT 1 FROM votes
+    WHERE group_id = ${params.id} AND voter_id = ${session.userId}
+      AND target_id = ${targetId}
+    LIMIT 1
+  `;
+  if (already.rows.length > 0) {
+    return NextResponse.json(
+      { error: "Bu oyuncuyu zaten oyladın. Oylar bir kez verilir ve değiştirilemez." },
+      { status: 409 }
+    );
+  }
+
   for (const key of SKILL_KEYS) {
     const raw = scores[key];
     const value = Number(raw);
@@ -79,19 +94,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     await sql`
       INSERT INTO votes (group_id, voter_id, target_id, skill, score)
       VALUES (${params.id}, ${session.userId}, ${targetId}, ${key}, ${value})
-      ON CONFLICT (group_id, voter_id, target_id, skill)
-      DO UPDATE SET score = EXCLUDED.score, created_at = now()
+      ON CONFLICT (group_id, voter_id, target_id, skill) DO NOTHING
     `;
   }
 
   await sql`
     INSERT INTO position_votes (group_id, voter_id, target_id, primary_position, secondary_position)
     VALUES (${params.id}, ${session.userId}, ${targetId}, ${primaryPosition}, ${secondaryPosition})
-    ON CONFLICT (group_id, voter_id, target_id)
-    DO UPDATE SET
-      primary_position = EXCLUDED.primary_position,
-      secondary_position = EXCLUDED.secondary_position,
-      created_at = now()
+    ON CONFLICT (group_id, voter_id, target_id) DO NOTHING
   `;
 
   return NextResponse.json({ ok: true });

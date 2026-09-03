@@ -31,3 +31,34 @@ export function positionLabel(key: string | null | undefined): string {
 export const MIN_SCORE = 60;
 export const MAX_SCORE = 90;
 export const DEFAULT_SCORE = 75;
+
+// Mac fazlari — sunucudaki lib/matchStatus.ts ile ayni etiketler.
+// Faz zamandan turetilip API'den geliyor; burada yalnizca gosterim var.
+export type MatchPhase =
+  | "poll"
+  | "scheduled"
+  | "playing"
+  | "rating"
+  | "completed"
+  | "cancelled";
+
+export const PHASE_LABEL: Record<MatchPhase, string> = {
+  poll: "Anket açık",
+  scheduled: "Planlandı",
+  playing: "Oynanıyor",
+  rating: "Puanlanıyor",
+  completed: "Tamamlandı",
+  cancelled: "İptal",
+};
+
+export const PHASE_TONE: Record<
+  MatchPhase,
+  "neutral" | "brand" | "accent" | "danger"
+> = {
+  rating: "accent",
+  poll: "accent",
+  scheduled: "brand",
+  playing: "brand",
+  completed: "neutral",
+  cancelled: "danger",
+};

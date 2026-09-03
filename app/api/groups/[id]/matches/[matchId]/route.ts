@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { isGroupMember } from "@/lib/groupAccess";
-import { maybeProcessMatchRatings, RATING_DEADLINE_HOURS } from "@/lib/matchRating";
+import { maybeProcessMatchRatings } from "@/lib/matchRating";
+import { matchPhase, ratingDeadline } from "@/lib/matchStatus";
 
 export async function GET(
   _req: NextRequest,
@@ -70,9 +71,7 @@ export async function GET(
 
   const scheduledAt = match.scheduled_at ? new Date(match.scheduled_at as string) : null;
   const played = scheduledAt !== null && scheduledAt.getTime() <= Date.now();
-  const ratingDeadline = scheduledAt
-    ? new Date(scheduledAt.getTime() + RATING_DEADLINE_HOURS * 60 * 60 * 1000)
-    : null;
+  const deadline = scheduledAt ? ratingDeadline(scheduledAt) : null;
 
   const attendees = attendanceRes.rows.filter((a) => a.status === "yes");
   const iAmAttending = attendees.some((a) => a.user_id === session.userId);
@@ -96,13 +95,19 @@ export async function GET(
     attendance: attendanceRes.rows,
     myAttendance:
       attendanceRes.rows.find((a) => a.user_id === session.userId)?.status ?? null,
+    phase: matchPhase(match as { status: string; scheduled_at: string | null; ratings_processed_at: string | null }),
     rating: {
       // Puanlama yalnizca maca katilanlara ve mac oynandiktan sonra acik.
       open: played && !match.ratings_processed_at && iAmAttending,
       played,
-      deadline: ratingDeadline,
+      deadline,
       myRatings: myRatingsRes.rows,
       participants: attendees.map((a) => ({ id: a.user_id, name: a.name })),
+      // Kendini puanlayamazsin; arayuzde kendi kartinin cikmamasi icin
+      // hedef listesi sunucuda ayriliyor.
+      targets: attendees
+        .filter((a) => a.user_id !== session.userId)
+        .map((a) => ({ id: a.user_id, name: a.name })),
     },
   });
 }

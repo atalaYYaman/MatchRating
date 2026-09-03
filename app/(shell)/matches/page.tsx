@@ -7,6 +7,7 @@ import { TeamSwitcher } from "@/components/TeamSwitcher";
 import { api, ApiError } from "@/lib/client-api";
 import { useActiveGroup } from "@/lib/active-group";
 import { clockTime, countdownLabel, shortDate } from "@/lib/dateFormat";
+import { MatchPhase, PHASE_LABEL } from "@/lib/matchStatus";
 
 type MatchRow = {
   id: string;
@@ -18,16 +19,27 @@ type MatchRow = {
   scheduled_at: string | null;
   location: string | null;
   status: "poll_open" | "scheduled" | "completed" | "cancelled";
+  phase: MatchPhase;
   attending_count: number;
   poll_response_count: number;
 };
 
-const STATUS: Record<MatchRow["status"], { label: string; tone: BadgeTone }> = {
-  poll_open: { label: "Anket açık", tone: "accent" },
-  scheduled: { label: "Planlandı", tone: "brand" },
-  completed: { label: "Tamamlandı", tone: "neutral" },
-  cancelled: { label: "İptal", tone: "danger" },
+const PHASE_TONE: Record<MatchPhase, BadgeTone> = {
+  rating: "accent",
+  poll: "accent",
+  scheduled: "brand",
+  playing: "brand",
+  completed: "neutral",
+  cancelled: "danger",
 };
+
+// Dort cip yeter: hepsi, senden bir sey beklenenler, gelecek, gecmis.
+const FILTERS = [
+  { key: "all", label: "Tümü", phases: null },
+  { key: "rating", label: "Puanlanıyor", phases: ["rating"] },
+  { key: "upcoming", label: "Yaklaşan", phases: ["poll", "scheduled", "playing"] },
+  { key: "past", label: "Tamamlandı", phases: ["completed", "cancelled"] },
+] as const;
 
 export default function MatchesPage() {
   const { activeGroup, isAll, scopeId, groups } = useActiveGroup();
@@ -35,6 +47,7 @@ export default function MatchesPage() {
   const [matches, setMatches] = useState<MatchRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("all");
 
   // Kapsam degistiginde onceki istek hala ucuyor olabilir; gec donen eski
   // yanit yenisini ezmesin diye istegin kapsami ile guncel kapsam karsilastirilir.
@@ -67,6 +80,11 @@ export default function MatchesPage() {
     ? `/group/${newMatchTarget.id}/match/new`
     : null;
 
+  const activeFilter = FILTERS.find((f) => f.key === filter);
+  const visible = activeFilter?.phases
+    ? matches.filter((m) => (activeFilter.phases as readonly string[]).includes(m.phase))
+    : matches;
+
   return (
     <div>
       <div className="page-header">
@@ -82,9 +100,22 @@ export default function MatchesPage() {
 
       <ErrorText>{error}</ErrorText>
 
+      <div className="chips" style={{ marginBottom: "var(--space-4)" }}>
+        {FILTERS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            className={`chip ${filter === f.key ? "chip-on" : ""}`}
+            onClick={() => setFilter(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {loading && <p className="muted">Yükleniyor...</p>}
 
-      {!loading && matches.length === 0 && (
+      {!loading && visible.length === 0 && (
         <Card>
           <p className="muted" style={{ margin: 0 }}>
             {isAll
@@ -94,8 +125,7 @@ export default function MatchesPage() {
         </Card>
       )}
 
-      {matches.map((m) => {
-        const status = STATUS[m.status];
+      {visible.map((m) => {
         const upcoming =
           m.scheduled_at && new Date(m.scheduled_at).getTime() > Date.now();
         return (
@@ -106,7 +136,7 @@ export default function MatchesPage() {
           >
             <Card>
               <div className="row" style={{ justifyContent: "space-between" }}>
-                <Badge tone={status.tone}>{status.label}</Badge>
+                <Badge tone={PHASE_TONE[m.phase]}>{PHASE_LABEL[m.phase]}</Badge>
                 <span className="muted">
                   {isAll ? `${m.group_name} · ` : ""}
                   {m.match_kind === "ic" ? "Takım içi" : "Dış rakip"}

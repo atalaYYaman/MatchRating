@@ -12,6 +12,7 @@ import {
 } from "../../../../../../components/ui";
 import { api, ApiError } from "../../../../../../lib/api";
 import { clockTime, countdownLabel, shortDate } from "../../../../../../lib/format";
+import { MatchPhase, PHASE_LABEL, PHASE_TONE } from "../../../../../../lib/constants";
 import { border, colors, radius, space, type } from "../../../../../../lib/theme";
 
 type Detail = {
@@ -30,6 +31,7 @@ type Detail = {
     away_label: string | null;
   };
   isOwner: boolean;
+  phase: MatchPhase;
   options: {
     id: string;
     startsAt: string;
@@ -141,15 +143,7 @@ export default function MatchDetailScreen() {
       {/* Ozet */}
       <Card raised>
         <View style={s.head}>
-          <Badge tone={isPoll ? "accent" : m.status === "completed" ? "neutral" : "brand"}>
-            {isPoll
-              ? "Anket açık"
-              : m.status === "scheduled"
-              ? "Planlandı"
-              : m.status === "completed"
-              ? "Tamamlandı"
-              : "İptal"}
-          </Badge>
+          <Badge tone={PHASE_TONE[data.phase]}>{PHASE_LABEL[data.phase]}</Badge>
           <Text style={[type.bodyS, { color: colors.textTertiary }]}>
             {m.match_kind === "ic" ? "Takım içi" : "Dış rakip"}
           </Text>
