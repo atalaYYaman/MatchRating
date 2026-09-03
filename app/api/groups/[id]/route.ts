@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { computeGroupRecords } from "@/lib/records";
 
 async function assertMember(groupId: string, userId: string) {
   const result = await sql`
@@ -15,7 +16,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   // Uc sorgu birbirinden bagimsiz; ardisik degil paralel calistirarak
   // uzak veritabanina gidiş-dönüş sayisini 3'ten 1'e indiriyoruz.
-  const [isMember, groupResult, membersResult] = await Promise.all([
+  const [isMember, groupResult, membersResult, records] = await Promise.all([
     assertMember(params.id, session.userId),
     sql`
       SELECT id, name, invite_code, owner_id, ratings_breakdown_public, created_at
@@ -33,6 +34,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       WHERE gm.group_id = ${params.id}
       ORDER BY gm.joined_at ASC
     `,
+    computeGroupRecords(params.id),
   ]);
 
   if (!isMember) return NextResponse.json({ error: "Bu takıma erişiminiz yok." }, { status: 403 });
@@ -40,9 +42,15 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const group = groupResult.rows[0];
   if (!group) return NextResponse.json({ error: "Takım bulunamadı." }, { status: 404 });
 
+  const emptyRecord = { played: 0, wins: 0, draws: 0, losses: 0 };
+  const members = membersResult.rows.map((m) => ({
+    ...m,
+    record: records.get(m.id as string) ?? emptyRecord,
+  }));
+
   return NextResponse.json({
     group,
-    members: membersResult.rows,
+    members,
     // Istemci "takimdan ayril" icin kendi uyelik satirini hedefliyor.
     meId: session.userId,
     isOwner: group.owner_id === session.userId,

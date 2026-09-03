@@ -14,7 +14,15 @@ import { positionLabel } from "../../../../lib/constants";
 import { colors, space, type } from "../../../../lib/theme";
 
 type Group = { id: string; name: string; invite_code: string; owner_id: string };
-type Member = { id: string; name: string; account_name: string; email: string; nickname: string | null };
+type MatchRecord = { played: number; wins: number; draws: number; losses: number };
+type Member = {
+  id: string;
+  name: string;
+  account_name: string;
+  email: string;
+  nickname: string | null;
+  record: MatchRecord;
+};
 type Rating = {
   userId: string;
   name: string;
@@ -278,6 +286,11 @@ export default function GroupScreen() {
                         )} · ${r.voteCount} oy`
                       : "Henüz oy almadı"}
                   </Text>
+                  {m.record.played > 0 && (
+                    <Text style={{ color: colors.textTertiary, marginTop: 2, fontSize: 12 }}>
+                      {m.record.wins}G {m.record.draws}B {m.record.losses}M
+                    </Text>
+                  )}
 
                   {isOwner && (
                     <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>

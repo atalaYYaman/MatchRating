@@ -179,3 +179,40 @@ UPDATE votes
 SET score = ROUND(60 + (score - 1) * 30.0 / 9)::smallint
 WHERE score BETWEEN 1 AND 10;
 ALTER TABLE votes ADD CONSTRAINT votes_score_check CHECK (score BETWEEN 60 AND 90);
+
+-- ==========================================================================
+-- KADROLAR (mac ici takim ayrimi)
+-- ==========================================================================
+
+-- Kadrolar yalnizca match_kind='ic' maclarda kullanilir: katilimcilar
+-- guce/mevkiye gore iki tarafa (home/away) bolunur.
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS squads_locked_at TIMESTAMPTZ;
+
+CREATE TABLE IF NOT EXISTS match_squads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  side TEXT NOT NULL CHECK (side IN ('home', 'away')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (match_id, side)
+);
+
+-- Her satir ya kayitli bir uyedir (user_id) ya da misafirdir (guest_name);
+-- ikisi birden olamaz. overall/mevki, kadro olusturuldugu andaki guc
+-- puaninin bir kopyasidir (oyuncunun puani sonradan degisse de kadro sabit
+-- kalir); goruntulemede isim yine de canli cekilir.
+CREATE TABLE IF NOT EXISTS match_squad_players (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  squad_id UUID NOT NULL REFERENCES match_squads(id) ON DELETE CASCADE,
+  match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  guest_name TEXT,
+  overall SMALLINT NOT NULL,
+  primary_position TEXT,
+  secondary_position TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK ((user_id IS NULL) <> (guest_name IS NULL))
+);
+
+CREATE INDEX IF NOT EXISTS idx_squad_players_squad ON match_squad_players (squad_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_squad_players_match_user
+  ON match_squad_players (match_id, user_id) WHERE user_id IS NOT NULL;

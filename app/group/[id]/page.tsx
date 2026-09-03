@@ -12,6 +12,7 @@ type Member = {
   account_name: string;
   nickname: string | null;
   email: string;
+  record: { played: number; wins: number; draws: number; losses: number };
 };
 type Group = {
   id: string;
@@ -212,6 +213,7 @@ export default function GroupPage() {
               <tr>
                 <th>İsim</th>
                 <th>E-posta</th>
+                <th>G-B-M</th>
                 {isOwner && <th>İşlem</th>}
               </tr>
             </thead>
@@ -244,6 +246,11 @@ export default function GroupPage() {
                       )}
                     </td>
                     <td>{m.email}</td>
+                    <td>
+                      {m.record.played > 0
+                        ? `${m.record.wins}-${m.record.draws}-${m.record.losses}`
+                        : "—"}
+                    </td>
                     {isOwner && (
                       <td>
                         {editing ? (

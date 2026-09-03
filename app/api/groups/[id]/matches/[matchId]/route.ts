@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { isGroupMember } from "@/lib/groupAccess";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
 import { matchPhase, ratingDeadline } from "@/lib/matchStatus";
+import { getMatchSquads } from "@/lib/squads";
 
 export async function GET(
   _req: NextRequest,
@@ -20,7 +21,7 @@ export async function GET(
   // Mac oynandiysa ve kosullar saglaniyorsa puanlari isle.
   await maybeProcessMatchRatings(params.matchId);
 
-  const [matchRes, optionsRes, responsesRes, optionVotesRes, attendanceRes, myRatingsRes] =
+  const [matchRes, optionsRes, responsesRes, optionVotesRes, attendanceRes, myRatingsRes, squads] =
     await Promise.all([
       sql`
         SELECT id, group_id, created_by, mode, match_kind, required_players, note,
@@ -57,6 +58,7 @@ export async function GET(
         FROM match_ratings
         WHERE match_id = ${params.matchId} AND rater_id = ${session.userId}
       `,
+      getMatchSquads(params.matchId),
     ]);
 
   const match = matchRes.rows[0];
@@ -96,6 +98,8 @@ export async function GET(
     myAttendance:
       attendanceRes.rows.find((a) => a.user_id === session.userId)?.status ?? null,
     phase: matchPhase(match as { status: string; scheduled_at: string | null; ratings_processed_at: string | null }),
+    // Kadrolar yalnizca takim ici maclarda anlamli.
+    squads: match.match_kind === "ic" ? squads : null,
     rating: {
       // Puanlama yalnizca maca katilanlara ve mac oynandiktan sonra acik.
       open: played && !match.ratings_processed_at && iAmAttending,

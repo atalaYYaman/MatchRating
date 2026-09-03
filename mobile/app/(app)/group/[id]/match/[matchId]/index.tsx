@@ -48,6 +48,11 @@ type Detail = {
     played: boolean;
     participants: { id: string; name: string }[];
   };
+  squads: {
+    locked: boolean;
+    home: { id: string; name: string; isGuest: boolean; overall: number }[];
+    away: { id: string; name: string; isGuest: boolean; overall: number }[];
+  } | null;
 };
 
 export default function MatchDetailScreen() {
@@ -410,6 +415,80 @@ export default function MatchDetailScreen() {
               )
             }
           />
+        </Card>
+      )}
+
+      {/* Kadrolar: yalnizca takim ici maclarda */}
+      {m.match_kind === "ic" && !["poll", "completed", "cancelled"].includes(data.phase) && (
+        <Card>
+          <View style={s.head}>
+            <Label>Kadrolar</Label>
+            {data.squads && (
+              <Text style={[type.bodyS, { color: colors.textSecondary }]}>
+                {data.squads.home.length}-{data.squads.away.length}
+                {data.squads.locked ? " · kilitli" : ""}
+              </Text>
+            )}
+          </View>
+          <Text style={[type.bodyS, { color: colors.textSecondary, marginBottom: space[3] }]}>
+            {data.squads
+              ? "Kadrolar oluşturuldu."
+              : "Yoklamaya katılanlar iki takıma bölünmedi."}
+          </Text>
+          <Button
+            title="Kadroları yönet"
+            variant="secondary"
+            onPress={() => router.push(`/group/${id}/match/${matchId}/squads`)}
+          />
+        </Card>
+      )}
+
+      {/* Tamamlanmis mac ozeti: skor + kadrolar */}
+      {data.phase === "completed" && data.squads && (
+        <Card>
+          <Label>Kadrolar</Label>
+          <Text style={[type.bodyMMedium, { color: colors.ink, marginTop: space[2] }]}>
+            Takım 1{" "}
+            {m.home_score != null && m.away_score != null && (
+              <Text style={{ color: colors.textSecondary, fontWeight: "400" }}>
+                (
+                {m.home_score > m.away_score
+                  ? "kazandı"
+                  : m.home_score < m.away_score
+                  ? "kaybetti"
+                  : "berabere"}
+                )
+              </Text>
+            )}
+          </Text>
+          {data.squads.home.map((p) => (
+            <Text key={p.id} style={[type.bodyS, { color: colors.textSecondary }]}>
+              {p.name}
+              {p.isGuest ? " (misafir)" : ""}
+            </Text>
+          ))}
+          <Text
+            style={[type.bodyMMedium, { color: colors.ink, marginTop: space[3] }]}
+          >
+            Takım 2{" "}
+            {m.home_score != null && m.away_score != null && (
+              <Text style={{ color: colors.textSecondary, fontWeight: "400" }}>
+                (
+                {m.away_score > m.home_score
+                  ? "kazandı"
+                  : m.away_score < m.home_score
+                  ? "kaybetti"
+                  : "berabere"}
+                )
+              </Text>
+            )}
+          </Text>
+          {data.squads.away.map((p) => (
+            <Text key={p.id} style={[type.bodyS, { color: colors.textSecondary }]}>
+              {p.name}
+              {p.isGuest ? " (misafir)" : ""}
+            </Text>
+          ))}
         </Card>
       )}
 

@@ -30,6 +30,12 @@ function occupyCount(team: Team, position: string | null): number {
 }
 
 function isBetterTeam(candidate: Team, current: Team, player: RatedPlayer): boolean {
+  // Oyuncu sayisi once dengelenir: aksi halde ayni mevkiyi oylayan bir grupta
+  // (herkes "orta saha" gibi) takimlar 2'ye 4 gibi oynanamaz sekilde bolunebilir.
+  if (candidate.players.length !== current.players.length) {
+    return candidate.players.length < current.players.length;
+  }
+
   const cPrimary = occupyCount(candidate, player.primaryPosition);
   const tPrimary = occupyCount(current, player.primaryPosition);
   if (cPrimary !== tPrimary) return cPrimary < tPrimary;
@@ -38,10 +44,7 @@ function isBetterTeam(candidate: Team, current: Team, player: RatedPlayer): bool
   const tSecondary = occupyCount(current, player.secondaryPosition);
   if (cSecondary !== tSecondary) return cSecondary < tSecondary;
 
-  if (candidate.totalRating !== current.totalRating) {
-    return candidate.totalRating < current.totalRating;
-  }
-  return candidate.players.length < current.players.length;
+  return candidate.totalRating < current.totalRating;
 }
 
 /**
