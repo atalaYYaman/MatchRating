@@ -21,11 +21,12 @@ export async function GET(
   // Mac oynandiysa ve kosullar saglaniyorsa puanlari isle.
   await maybeProcessMatchRatings(params.matchId);
 
-  const [matchRes, optionsRes, responsesRes, optionVotesRes, attendanceRes, myRatingsRes, squads] =
+  const [matchRes, optionsRes, responsesRes, optionVotesRes, attendanceRes, myRatingsRes, ratingResultsRes, squads] =
     await Promise.all([
       sql`
         SELECT id, group_id, created_by, mode, match_kind, required_players, note,
-               scheduled_at, location, status, ratings_processed_at, created_at
+               scheduled_at, location, status, ratings_processed_at, created_at,
+               home_score, away_score, home_label, away_label
         FROM matches WHERE id = ${params.matchId} AND group_id = ${params.id}
       `,
       sql`
@@ -57,6 +58,17 @@ export async function GET(
         SELECT target_id, score, strength_skill, weakness_skill
         FROM match_ratings
         WHERE match_id = ${params.matchId} AND rater_id = ${session.userId}
+      `,
+      sql`
+        SELECT r.target_id,
+               COALESCE(NULLIF(BTRIM(gm.nickname), ''), u.name) AS name,
+               AVG(r.score)::float8 AS avg_score,
+               COUNT(*)::int AS rater_count
+        FROM match_ratings r
+        JOIN users u ON u.id = r.target_id
+        LEFT JOIN group_members gm ON gm.group_id = ${params.id} AND gm.user_id = r.target_id
+        WHERE r.match_id = ${params.matchId}
+        GROUP BY r.target_id, COALESCE(NULLIF(BTRIM(gm.nickname), ''), u.name)
       `,
       getMatchSquads(params.matchId),
     ]);
@@ -112,6 +124,16 @@ export async function GET(
       targets: attendees
         .filter((a) => a.user_id !== session.userId)
         .map((a) => ({ id: a.user_id, name: a.name })),
+      // Mac puanlama sonucu: oyuncu basina aldigi ortalama puan (yuksekten
+      // dusuge). Puan veren olduysa gorunur.
+      results: ratingResultsRes.rows
+        .map((r) => ({
+          userId: r.target_id as string,
+          name: r.name as string,
+          average: Math.round(Number(r.avg_score) * 10) / 10,
+          raterCount: Number(r.rater_count),
+        }))
+        .sort((a, b) => b.average - a.average),
     },
   });
 }

@@ -20,6 +20,8 @@ type Detail = {
     status: "poll_open" | "scheduled" | "completed" | "cancelled";
     home_score: number | null;
     away_score: number | null;
+    home_label: string | null;
+    away_label: string | null;
   };
   isOwner: boolean;
   phase: MatchPhase;
@@ -28,7 +30,12 @@ type Detail = {
   myOptionIds: string[];
   attendance: { user_id: string; status: "yes" | "no"; name: string }[];
   myAttendance: "yes" | "no" | null;
-  rating: { open: boolean; played: boolean; participants: { id: string; name: string }[] };
+  rating: {
+    open: boolean;
+    played: boolean;
+    participants: { id: string; name: string }[];
+    results: { userId: string; name: string; average: number; raterCount: number }[];
+  };
   squads: {
     locked: boolean;
     home: { id: string; name: string; isGuest: boolean; overall: number }[];
@@ -158,6 +165,31 @@ export default function MatchDetailPage() {
         )}
         {m.note && <p className="muted">{m.note}</p>}
       </Card>
+
+      {/* Final skor: girildiyse herkese gorunur */}
+      {m.home_score != null && m.away_score != null && (
+        <Card>
+          <Eyebrow>SONUÇ</Eyebrow>
+          <div
+            className="row"
+            style={{ justifyContent: "space-around", alignItems: "center", marginTop: 12 }}
+          >
+            <div style={{ textAlign: "center", flex: 1 }}>
+              <div className="muted" style={{ fontSize: 13 }}>
+                {m.home_label ?? (m.match_kind === "ic" ? "Takım 1" : "Biz")}
+              </div>
+              <div className="big-score">{m.home_score}</div>
+            </div>
+            <span className="big-score muted">–</span>
+            <div style={{ textAlign: "center", flex: 1 }}>
+              <div className="muted" style={{ fontSize: 13 }}>
+                {m.away_label ?? (m.match_kind === "ic" ? "Takım 2" : "Rakip")}
+              </div>
+              <div className="big-score">{m.away_score}</div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Anket */}
       {isPoll && (
@@ -389,6 +421,27 @@ export default function MatchDetailPage() {
           >
             Skoru kaydet
           </button>
+        </Card>
+      )}
+
+      {/* Maç puanlama sonucu: oyuncularin aldigi ortalama puan */}
+      {data.rating.results.length > 0 && (
+        <Card>
+          <Eyebrow>MAÇ PUANLARI</Eyebrow>
+          <p className="muted" style={{ margin: "6px 0 4px", fontSize: 13 }}>
+            Oyuncuların bu maçta arkadaşlarından aldığı ortalama puan (10 üzerinden).
+          </p>
+          <div className="roster">
+            {data.rating.results.map((r) => (
+              <div key={r.userId} className="roster-row">
+                <span className="grow">
+                  <span className="roster-name">{r.name}</span>
+                  <div className="roster-meta">{r.raterCount} oy</div>
+                </span>
+                <span className="roster-score">{r.average.toFixed(1)}</span>
+              </div>
+            ))}
+          </div>
         </Card>
       )}
 

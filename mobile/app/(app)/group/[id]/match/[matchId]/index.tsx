@@ -47,6 +47,7 @@ type Detail = {
     open: boolean;
     played: boolean;
     participants: { id: string; name: string }[];
+    results: { userId: string; name: string; average: number; raterCount: number }[];
   };
   squads: {
     locked: boolean;
@@ -182,6 +183,35 @@ export default function MatchDetailScreen() {
           </Text>
         ) : null}
       </Card>
+
+      {/* Final skor: girildiyse herkese gorunur */}
+      {m.home_score != null && m.away_score != null && (
+        <Card>
+          <Label>Sonuç</Label>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-around",
+              alignItems: "center",
+              marginTop: space[2],
+            }}
+          >
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <Text style={[type.bodyS, { color: colors.textSecondary }]}>
+                {m.home_label ?? (m.match_kind === "ic" ? "Takım 1" : "Biz")}
+              </Text>
+              <Text style={[type.scoreL, { color: colors.pitch900 }]}>{m.home_score}</Text>
+            </View>
+            <Text style={[type.scoreM, { color: colors.ink300 }]}>–</Text>
+            <View style={{ flex: 1, alignItems: "center" }}>
+              <Text style={[type.bodyS, { color: colors.textSecondary }]}>
+                {m.away_label ?? (m.match_kind === "ic" ? "Takım 2" : "Rakip")}
+              </Text>
+              <Text style={[type.scoreL, { color: colors.pitch900 }]}>{m.away_score}</Text>
+            </View>
+          </View>
+        </Card>
+      )}
 
       {/* Anket */}
       {isPoll && (
@@ -373,6 +403,39 @@ export default function MatchDetailScreen() {
           title="Maçı oyla"
           onPress={() => router.push(`/group/${id}/match/${matchId}/rate`)}
         />
+      )}
+
+      {/* Mac puanlama sonucu: oyuncularin aldigi ortalama puan */}
+      {data.rating.results.length > 0 && (
+        <Card>
+          <Label>Maç puanları</Label>
+          <Text style={[type.bodyS, { color: colors.textSecondary, marginBottom: space[2] }]}>
+            Oyuncuların bu maçta arkadaşlarından aldığı ortalama puan (10 üzerinden).
+          </Text>
+          {data.rating.results.map((r) => (
+            <View
+              key={r.userId}
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingVertical: 8,
+                borderTopWidth: 1,
+                borderTopColor: colors.borderDefault,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.textPrimary, fontWeight: "500" }}>{r.name}</Text>
+                <Text style={{ color: colors.textTertiary, fontSize: 12 }}>
+                  {r.raterCount} oy
+                </Text>
+              </View>
+              <Text style={[type.scoreS, { color: colors.pitch900 }]}>
+                {r.average.toFixed(1)}
+              </Text>
+            </View>
+          ))}
+        </Card>
       )}
 
       {/* Skor (yonetici, mac oynandiktan sonra) */}
