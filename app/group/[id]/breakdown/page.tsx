@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { Badge, Card, ErrorText, Eyebrow, InlineMessage } from "@/components/ui";
+import { api, ApiError } from "@/lib/client-api";
 import { SKILLS } from "@/lib/skills";
 import { positionLabel } from "@/lib/positions";
 
@@ -31,35 +33,32 @@ export default function BreakdownPage() {
   const groupId = params.id;
 
   const [players, setPlayers] = useState<PlayerBreakdown[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch(`/api/groups/${groupId}/breakdown`, { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Puan detayları yüklenemedi.");
-        setPlayers([]);
-        setIsOwner(Boolean(data.isOwner));
-        setIsPublic(Boolean(data.ratingsBreakdownPublic));
-        return;
-      }
-      setPlayers(data.players || []);
+      const data = await api.get<{
+        players: PlayerBreakdown[];
+        isOwner: boolean;
+        ratingsBreakdownPublic: boolean;
+      }>(`/api/groups/${groupId}/breakdown`);
+      setPlayers(data.players ?? []);
       setIsOwner(Boolean(data.isOwner));
       setIsPublic(Boolean(data.ratingsBreakdownPublic));
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Puan detayları yüklenemedi."
+      );
+      setPlayers([]);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [groupId]);
 
@@ -71,48 +70,39 @@ export default function BreakdownPage() {
     setToggling(true);
     setActionError(null);
     try {
-      const res = await fetch(`/api/groups/${groupId}/breakdown`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ public: !isPublic }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setActionError(data.error || "Ayar kaydedilemedi.");
-        return;
-      }
+      const data = await api.patch<{ ratingsBreakdownPublic: boolean }>(
+        `/api/groups/${groupId}/breakdown`,
+        { public: !isPublic }
+      );
       setIsPublic(Boolean(data.ratingsBreakdownPublic));
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : "Ayar kaydedilemedi.");
     } finally {
       setToggling(false);
     }
   }
 
-  const selected = players.find((p) => p.userId === selectedId) || null;
-
-  if (loading) return <p>Yükleniyor...</p>;
+  if (loading) return <p className="muted">Yükleniyor...</p>;
 
   return (
     <div>
-      <p><Link href={`/group/${groupId}`}>← Takıma dön</Link></p>
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <h1 style={{ margin: 0 }}>Puan Detayları</h1>
-        <button className="secondary" onClick={() => load(true)} disabled={refreshing}>
-          {refreshing ? "Yenileniyor..." : "Yenile"}
-        </button>
-      </div>
       <p>
-        Bir oyuncuya tıklayınca her yetenek için kimden kaç puan aldığını görürsün.
+        <Link href={`/group/${groupId}`}>← Takıma dön</Link>
+      </p>
+      <h1>Puan Detayları</h1>
+      <p className="muted" style={{ marginTop: 4 }}>
+        Her oyuncunun aldığı oyların kimden geldiğini gösterir.
       </p>
 
       {isOwner && (
-        <div className="card">
+        <Card>
           <div className="row" style={{ justifyContent: "space-between" }}>
-            <div>
-              <strong>Görünürlük</strong>
-              <p style={{ margin: "4px 0 0", color: "#666", fontSize: 14 }}>
+            <div className="grow">
+              <Eyebrow>GÖRÜNÜRLÜK</Eyebrow>
+              <p className="muted" style={{ margin: "6px 0 0" }}>
                 {isPublic
-                  ? "Şu an tüm takım üyeleri bu sayfayı görebilir."
-                  : "Şu an sadece sen (yönetici) bu sayfayı görebilirsin."}
+                  ? "Detaylar takımdaki herkese açık."
+                  : "Detayları şu an yalnızca sen görüyorsun."}
               </p>
             </div>
             <button
@@ -120,119 +110,105 @@ export default function BreakdownPage() {
               onClick={togglePublic}
               disabled={toggling}
             >
-              {toggling
-                ? "Kaydediliyor..."
-                : isPublic
-                  ? "Sadece yönetici görsün"
-                  : "Herkese açık yap"}
+              {isPublic ? "Gizle" : "Herkese aç"}
             </button>
           </div>
-          {actionError && <p className="error" style={{ marginBottom: 0 }}>{actionError}</p>}
-        </div>
+          <ErrorText>{actionError}</ErrorText>
+        </Card>
       )}
 
-      {error && <p className="error">{error}</p>}
+      {error && <InlineMessage tone="danger">{error}</InlineMessage>}
 
-      {!error && (
-        <>
-          <h3>Oyuncular ({players.length})</h3>
-          {players.length === 0 ? (
-            <p>Bu takımda oyuncu yok.</p>
-          ) : (
-            <div className="card" style={{ padding: 8 }}>
-              {players.map((p) => (
-                <button
-                  key={p.userId}
-                  type="button"
-                  className={`player-list-item${selectedId === p.userId ? " active" : ""}`}
-                  onClick={() => setSelectedId(p.userId === selectedId ? null : p.userId)}
-                >
-                  <span>{p.name}</span>
-                  <span className="pill">{p.voteCount} oy</span>
-                </button>
-              ))}
-            </div>
-          )}
+      {!error && players.length === 0 && (
+        <Card>
+          <p className="muted" style={{ margin: 0 }}>
+            Henüz oy verilmemiş.
+          </p>
+        </Card>
+      )}
 
-          {players.length > 0 && !selected && (
-            <p style={{ color: "#888" }}>Detayları görmek için listeden bir oyuncu seç.</p>
-          )}
+      {players.map((p) => {
+        const open = openId === p.userId;
+        return (
+          <Card key={p.userId} raised={open}>
+            <button
+              type="button"
+              className="disclosure"
+              onClick={() => setOpenId(open ? null : p.userId)}
+              aria-expanded={open}
+            >
+              <span className="grow">
+                {p.name}{" "}
+                <Badge tone={p.voteCount > 0 ? "brand" : "neutral"}>
+                  {p.voteCount} oy
+                </Badge>
+              </span>
+              <span aria-hidden="true">{open ? "−" : "+"}</span>
+            </button>
 
-          {selected && (
-            <div>
-              <h3>{selected.name}</h3>
-              {SKILLS.map((s) => {
-                const skill = selected.skills[s.key];
-                return (
-                  <div key={s.key} className="card">
-                    <div className="row" style={{ justifyContent: "space-between" }}>
-                      <strong>{s.label}</strong>
-                      <span className="pill">
-                        {skill?.average != null
-                          ? `Ort. ${skill.average} · ${skill.voteCount} oy`
-                          : "Oy yok"}
-                      </span>
+            {open && (
+              <div style={{ marginTop: 4 }}>
+                {p.voteCount === 0 && (
+                  <p className="muted">Bu oyuncuya henüz oy verilmemiş.</p>
+                )}
+
+                {SKILLS.map((s) => {
+                  const b = p.skills[s.key];
+                  if (!b || b.voteCount === 0) return null;
+                  return (
+                    <div
+                      key={s.key}
+                      style={{
+                        paddingTop: 14,
+                        marginTop: 14,
+                        borderTop: "1px solid var(--border-default)",
+                      }}
+                    >
+                      <div className="skill-line">
+                        <Eyebrow>{s.label}</Eyebrow>
+                        <span className="skill-avg">{b.average}</span>
+                      </div>
+                      <div className="voters">
+                        {b.votes.map((v) => (
+                          <div key={v.voterId} className="voter-row">
+                            <span>{v.voterName}</span>
+                            <span className="voter-score">{v.score}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    {!skill?.votes?.length ? (
-                      <p style={{ margin: "8px 0 0", color: "#888", fontSize: 14 }}>
-                        Bu yetenek için henüz oy yok.
-                      </p>
-                    ) : (
-                      <table style={{ marginTop: 8 }}>
-                        <thead>
-                          <tr>
-                            <th>Oy veren</th>
-                            <th>Puan</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {skill.votes.map((v) => (
-                            <tr key={v.voterId}>
-                              <td>{v.voterName}</td>
-                              <td><strong>{v.score}</strong></td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })}
 
-              <div className="card">
-                <div className="row" style={{ justifyContent: "space-between" }}>
-                  <strong>Mevki oyları</strong>
-                  <span className="pill">{selected.positions.length} oy</span>
-                </div>
-                {selected.positions.length === 0 ? (
-                  <p style={{ margin: "8px 0 0", color: "#888", fontSize: 14 }}>
-                    Bu oyuncu için henüz mevki oyu yok.
-                  </p>
-                ) : (
-                  <table style={{ marginTop: 8 }}>
-                    <thead>
-                      <tr>
-                        <th>Oy veren</th>
-                        <th>1. Mevki</th>
-                        <th>2. Mevki</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selected.positions.map((v) => (
-                        <tr key={v.voterId}>
-                          <td>{v.voterName}</td>
-                          <td>{positionLabel(v.primary)}</td>
-                          <td>{positionLabel(v.secondary)}</td>
-                        </tr>
+                {p.positions.length > 0 && (
+                  <div
+                    style={{
+                      paddingTop: 14,
+                      marginTop: 14,
+                      borderTop: "1px solid var(--border-default)",
+                    }}
+                  >
+                    <div className="skill-line">
+                      <Eyebrow>MEVKİ OYLARI</Eyebrow>
+                      <span className="muted">{p.positions.length} oy</span>
+                    </div>
+                    <div className="voters">
+                      {p.positions.map((v) => (
+                        <div key={v.voterId} className="voter-row">
+                          <span>{v.voterName}</span>
+                          <span>
+                            {positionLabel(v.primary)} / {positionLabel(v.secondary)}
+                          </span>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </Card>
+        );
+      })}
     </div>
   );
 }

@@ -998,5 +998,213 @@ input[type="range"]:focus {
   align-items: flex-start;
   gap: var(--space-2);
 }
+
+/* ...ama dogrudan icindeki butonlar tam genislik ister */
+.stack > button { width: 100%; }
 .grow { flex: 1; min-width: 0; }
 .full { width: 100%; }
+
+/* Mevki secim cipleri — birincil dolu yesil, ikincil acik yesil (mobildeki
+   ile ayni gorsel dil) */
+.chip-on,
+.chip-on:hover {
+  background: var(--pitch);
+  border-color: var(--pitch);
+  color: var(--text-on-brand);
+}
+
+.chip-alt,
+.chip-alt:hover {
+  background: var(--pitch-100);
+  border-color: var(--pitch);
+  border-width: 1.5px;
+  color: var(--pitch-900);
+}
+
+/* Yetenek slider'i: etiket solda, deger sagda skorbord rakamiyla */
+.slider-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: 4px;
+}
+
+.slider-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--pitch-900);
+  font-variant-numeric: tabular-nums;
+}
+
+.slider-block + .slider-block { margin-top: var(--space-4); }
+
+.slider-block input[type="range"] { width: 100%; display: block; }
+
+/* Sayi artirici (takim sayisi) */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.stepper button {
+  min-width: 44px;
+  padding: 10px 0;
+  background: var(--surface-card-raised);
+  border: 1px solid var(--border-default);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.stepper button:hover:not(:disabled) { filter: none; background: var(--chalk-200); }
+
+.stepper-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+  min-width: 34px;
+  text-align: center;
+  color: var(--pitch-900);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Oyuncu secim satiri */
+.pick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: var(--radius-button);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pick:hover { filter: none; background: var(--chalk-200); }
+.pick:active { transform: none; }
+
+.pick-on {
+  background: var(--pitch-100);
+  border-color: var(--pitch);
+}
+
+.pick-mark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.pick-on .pick-mark { color: var(--pitch); }
+
+/* Takim sonucu karti */
+.team-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.roster { display: flex; flex-direction: column; }
+
+.roster-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 9px 0;
+}
+
+.roster-row + .roster-row { border-top: 1px solid var(--border-default); }
+
+.roster-name { font-weight: 500; }
+
+.roster-meta {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.roster-score {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--pitch-900);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Puan dokumu: oy veren satirlari */
+.voters { display: flex; flex-direction: column; margin-top: var(--space-2); }
+
+.voter-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.voter-row + .voter-row { border-top: 1px solid var(--border-default); }
+
+.voter-score {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Yetenek satiri (puan dokumu) */
+.skill-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.skill-avg {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--pitch-900);
+  font-variant-numeric: tabular-nums;
+}
+
+.disclosure {
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: var(--space-3) 0;
+  text-align: left;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.disclosure:hover { filter: none; color: var(--pitch); }
+.disclosure:active { transform: none; }

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { Badge, Card, ErrorText, Eyebrow, InlineMessage } from "@/components/ui";
+import { api, ApiError } from "@/lib/client-api";
 import { SKILLS, SkillKey } from "@/lib/skills";
 import { DEFAULT_SCORE, MAX_SCORE, MIN_SCORE } from "@/lib/scoring";
 import { POSITIONS, PositionKey, isPositionKey } from "@/lib/positions";
@@ -34,43 +36,31 @@ export default function VotePage() {
   const [positionVotes, setPositionVotes] = useState<ExistingPositionVote[]>([]);
   const [activeTarget, setActiveTarget] = useState<string | null>(null);
   const [scores, setScores] = useState<Record<SkillKey, number>>({ ...DEFAULT_SCORES });
-  const [primaryPosition, setPrimaryPosition] = useState<PositionKey | "">("");
-  const [secondaryPosition, setSecondaryPosition] = useState<PositionKey | "">("");
-  const [refreshing, setRefreshing] = useState(false);
+  const [primary, setPrimary] = useState<PositionKey | null>(null);
+  const [secondary, setSecondary] = useState<PositionKey | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  const load = useCallback(async () => {
     try {
-      const [meRes, groupRes, votesRes] = await Promise.all([
-        fetch("/api/auth/me", { cache: "no-store" }),
-        fetch(`/api/groups/${groupId}`, { cache: "no-store" }),
-        fetch(`/api/groups/${groupId}/vote`, { cache: "no-store" }),
+      const [me, groupData, votesData] = await Promise.all([
+        api.get<{ user: { id: string } | null }>("/api/auth/me"),
+        api.get<{ members: Member[] }>(`/api/groups/${groupId}`),
+        api.get<{ votes: ExistingVote[]; positionVotes: ExistingPositionVote[] }>(
+          `/api/groups/${groupId}/vote`
+        ),
       ]);
-      const me = await meRes.json();
-      const groupData = await groupRes.json();
-      const votesData = await votesRes.json();
-
-      if (!groupRes.ok) {
-        setError(groupData.error || "Takım yüklenemedi.");
-        return;
-      }
-
-      setError(null);
-      setMeId(me.user?.id || null);
+      setMeId(me.user?.id ?? null);
       setMembers(groupData.members);
-
-      if (votesRes.ok) {
-        setSkillVotes((votesData.votes as ExistingVote[]) || []);
-        setPositionVotes((votesData.positionVotes as ExistingPositionVote[]) || []);
-      }
+      setSkillVotes(votesData.votes ?? []);
+      setPositionVotes(votesData.positionVotes ?? []);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Takım yüklenemedi.");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [groupId]);
 
@@ -83,202 +73,214 @@ export default function VotePage() {
     [members, meId]
   );
 
+  // Bir oyuncu, 6 yetenegin tamami ve mevki oyu girildiyse "oylandi" sayilir.
   const votedTargets = useMemo(() => {
-    const bySkillCount = new Map<string, number>();
+    const counts = new Map<string, number>();
     for (const v of skillVotes) {
-      bySkillCount.set(v.target_id, (bySkillCount.get(v.target_id) || 0) + 1);
+      counts.set(v.target_id, (counts.get(v.target_id) ?? 0) + 1);
     }
     const withPosition = new Set(positionVotes.map((v) => v.target_id));
-    const completed = new Set<string>();
-    for (const [targetId, count] of bySkillCount) {
-      if (count >= SKILLS.length && withPosition.has(targetId)) completed.add(targetId);
+    const done = new Set<string>();
+    for (const [targetId, count] of counts) {
+      if (count >= SKILLS.length && withPosition.has(targetId)) done.add(targetId);
     }
-    return completed;
+    return done;
   }, [skillVotes, positionVotes]);
 
   function openVoteFor(targetId: string) {
-    const nextScores = { ...DEFAULT_SCORES };
+    const next = { ...DEFAULT_SCORES };
     for (const v of skillVotes) {
-      if (v.target_id === targetId && v.skill in nextScores) {
-        nextScores[v.skill as SkillKey] = v.score;
+      if (v.target_id === targetId && v.skill in next) {
+        next[v.skill as SkillKey] = v.score;
       }
     }
-    setScores(nextScores);
+    setScores(next);
 
-    const existingPos = positionVotes.find((v) => v.target_id === targetId);
-    const existingPrimary = existingPos?.primary_position;
-    const existingSecondary = existingPos?.secondary_position;
-    setPrimaryPosition(isPositionKey(existingPrimary) ? existingPrimary : "");
-    setSecondaryPosition(isPositionKey(existingSecondary) ? existingSecondary : "");
+    const existing = positionVotes.find((v) => v.target_id === targetId);
+    setPrimary(isPositionKey(existing?.primary_position) ? existing.primary_position : null);
+    setSecondary(
+      isPositionKey(existing?.secondary_position) ? existing.secondary_position : null
+    );
 
     setActiveTarget(targetId);
     setMessage(null);
     setError(null);
   }
 
-  async function submitVote() {
-    if (!activeTarget) return;
-    if (!primaryPosition || !secondaryPosition) {
-      setError("Birincil ve ikincil mevki seçmelisin.");
+  // Mobildeki ile ayni davranis: ilk dokunus birincil, ikincisi ikincil mevki;
+  // secili olana tekrar dokunmak geri alir.
+  function selectPosition(key: PositionKey) {
+    if (primary === key) {
+      setPrimary(secondary);
+      setSecondary(null);
       return;
     }
-    if (primaryPosition === secondaryPosition) {
-      setError("Birincil ve ikincil mevki farklı olmalı.");
+    if (secondary === key) {
+      setSecondary(null);
+      return;
+    }
+    if (!primary) setPrimary(key);
+    else setSecondary(key);
+  }
+
+  async function submitVote() {
+    if (!activeTarget) return;
+    if (!primary || !secondary) {
+      setError("Birincil ve ikincil mevki seçmelisin.");
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/groups/${groupId}/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          targetId: activeTarget,
-          scores,
-          primaryPosition,
-          secondaryPosition,
-        }),
+      await api.post(`/api/groups/${groupId}/vote`, {
+        targetId: activeTarget,
+        scores,
+        primaryPosition: primary,
+        secondaryPosition: secondary,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Oy kaydedilemedi.");
-        return;
-      }
-      setSkillVotes((prev) => {
-        const others = prev.filter((v) => v.target_id !== activeTarget);
-        return [
-          ...others,
-          ...SKILLS.map((s) => ({
-            target_id: activeTarget,
-            skill: s.key,
-            score: scores[s.key],
-          })),
-        ];
-      });
-      setPositionVotes((prev) => {
-        const others = prev.filter((v) => v.target_id !== activeTarget);
-        return [
-          ...others,
-          {
-            target_id: activeTarget,
-            primary_position: primaryPosition,
-            secondary_position: secondaryPosition,
-          },
-        ];
-      });
+
+      const target = activeTarget;
+      setSkillVotes((prev) => [
+        ...prev.filter((v) => v.target_id !== target),
+        ...SKILLS.map((s) => ({ target_id: target, skill: s.key, score: scores[s.key] })),
+      ]);
+      setPositionVotes((prev) => [
+        ...prev.filter((v) => v.target_id !== target),
+        {
+          target_id: target,
+          primary_position: primary,
+          secondary_position: secondary,
+        },
+      ]);
       setMessage("Oy kaydedildi.");
       setActiveTarget(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Oy kaydedilemedi.");
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading) return <p>Yükleniyor...</p>;
-  if (error && teammates.length === 0) return <p className="error">{error}</p>;
+  if (loading) return <p className="muted">Yükleniyor...</p>;
 
   return (
     <div>
-      <p><Link href={`/group/${groupId}`}>← Takıma dön</Link></p>
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <h1 style={{ margin: 0 }}>Oylama</h1>
-        <button className="secondary" onClick={() => load(true)} disabled={refreshing}>
-          {refreshing ? "Yenileniyor..." : "Listeyi Yenile"}
-        </button>
-      </div>
       <p>
-        Takım arkadaşlarını 6 yetenek üzerinden {MIN_SCORE}-{MAX_SCORE} arası
-        puanla; birincil ve ikincil mevki seç.
+        <Link href={`/group/${groupId}`}>← Takıma dön</Link>
       </p>
-      {message && <p style={{ color: "green" }}>{message}</p>}
+      <h1>Oylama</h1>
+      <p className="muted" style={{ marginTop: 4 }}>
+        Takım arkadaşlarını 6 yetenek üzerinden {MIN_SCORE}-{MAX_SCORE} arası puanla;
+        birincil ve ikincil mevkilerini seç.
+      </p>
 
-      {teammates.length === 0 && <p>Oylayacağın başka üye yok.</p>}
+      {message && <InlineMessage tone="success">{message}</InlineMessage>}
+      {!activeTarget && <ErrorText>{error}</ErrorText>}
 
-      {teammates.map((m) => (
-        <div key={m.id} className="card">
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <strong>{m.name}</strong>
-            {votedTargets.has(m.id) ? (
-              <span className="pill">Oylandı ✓</span>
-            ) : (
-              <span className="pill">Bekliyor</span>
-            )}
-          </div>
+      {teammates.length === 0 && (
+        <Card>
+          <p className="muted" style={{ margin: 0 }}>
+            Oy verebileceğin başka üye yok.
+          </p>
+        </Card>
+      )}
 
-          {activeTarget === m.id ? (
-            <div style={{ marginTop: 12 }}>
-              <div className="pos-selects">
-                <div className="field">
-                  <label>Birincil mevki</label>
-                  <select
-                    value={primaryPosition}
-                    onChange={(e) => {
-                      const value = e.target.value as PositionKey | "";
-                      setPrimaryPosition(value);
-                      if (value && value === secondaryPosition) setSecondaryPosition("");
-                    }}
-                  >
-                    <option value="">Seç</option>
-                    {POSITIONS.map((p) => (
-                      <option key={p.key} value={p.key}>{p.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label>İkincil mevki</label>
-                  <select
-                    value={secondaryPosition}
-                    onChange={(e) => setSecondaryPosition(e.target.value as PositionKey | "")}
-                  >
-                    <option value="">Seç</option>
-                    {POSITIONS.filter((p) => p.key !== primaryPosition).map((p) => (
-                      <option key={p.key} value={p.key}>{p.label}</option>
-                    ))}
-                  </select>
-                </div>
+      {teammates.map((m) => {
+        const open = activeTarget === m.id;
+        const voted = votedTargets.has(m.id);
+
+        if (!open) {
+          return (
+            <Card key={m.id}>
+              <div className="row" style={{ justifyContent: "space-between" }}>
+                <strong>{m.name}</strong>
+                {voted ? (
+                  <Badge tone="brand">Oy verildi</Badge>
+                ) : (
+                  <Badge tone="neutral">Bekliyor</Badge>
+                )}
               </div>
+              <button
+                className="secondary full"
+                style={{ marginTop: 12 }}
+                onClick={() => openVoteFor(m.id)}
+              >
+                {voted ? "Puanları güncelle" : "Oyla"}
+              </button>
+            </Card>
+          );
+        }
 
-              {SKILLS.map((s) => (
-                <div key={s.key} className="field">
-                  <label>
-                    {s.label}: <strong>{scores[s.key]}</strong>
-                  </label>
-                  <input
-                    type="range"
-                    min={MIN_SCORE}
-                    max={MAX_SCORE}
-                    step={1}
-                    value={scores[s.key]}
-                    onChange={(e) =>
-                      setScores((prev) => ({ ...prev, [s.key]: Number(e.target.value) }))
-                    }
-                  />
-                  <div className="row" style={{ justifyContent: "space-between", color: "#888", fontSize: 12 }}>
-                    <span>{MIN_SCORE}</span>
-                    <span>{MAX_SCORE}</span>
-                  </div>
-                </div>
-              ))}
-              {error && <p className="error">{error}</p>}
-              <div className="row">
-                <button onClick={submitVote} disabled={saving}>
-                  {saving ? "Kaydediliyor..." : "Kaydet"}
-                </button>
-                <button className="secondary" onClick={() => setActiveTarget(null)}>
-                  İptal
-                </button>
-              </div>
+        return (
+          <Card key={m.id} raised>
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <h2 style={{ margin: 0 }}>{m.name}</h2>
+              {voted && <Badge tone="brand">Oy verildi</Badge>}
             </div>
-          ) : (
-            <button
-              className="secondary"
-              style={{ marginTop: 8 }}
-              onClick={() => openVoteFor(m.id)}
-            >
-              {votedTargets.has(m.id) ? "Puanları Güncelle" : "Oyla"}
-            </button>
-          )}
-        </div>
-      ))}
+
+            <div style={{ margin: "16px 0 8px" }}>
+              <Eyebrow>MEVKİ — ÖNCE BİRİNCİL, SONRA İKİNCİL</Eyebrow>
+            </div>
+            <div className="chips">
+              {POSITIONS.map((p) => {
+                const isPrimary = primary === p.key;
+                const isSecondary = secondary === p.key;
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    className={`chip ${isPrimary ? "chip-on" : ""} ${
+                      isSecondary ? "chip-alt" : ""
+                    }`}
+                    onClick={() => selectPosition(p.key)}
+                  >
+                    {p.label}
+                    {isPrimary ? " (1.)" : isSecondary ? " (2.)" : ""}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ margin: "20px 0 10px" }}>
+              <Eyebrow>YETENEKLER</Eyebrow>
+            </div>
+            {SKILLS.map((s) => (
+              <div key={s.key} className="slider-block">
+                <div className="slider-head">
+                  <label htmlFor={`sk-${m.id}-${s.key}`}>{s.label}</label>
+                  <span className="slider-value">{scores[s.key]}</span>
+                </div>
+                <input
+                  id={`sk-${m.id}-${s.key}`}
+                  type="range"
+                  min={MIN_SCORE}
+                  max={MAX_SCORE}
+                  step={1}
+                  value={scores[s.key]}
+                  onChange={(e) =>
+                    setScores((prev) => ({ ...prev, [s.key]: Number(e.target.value) }))
+                  }
+                />
+              </div>
+            ))}
+
+            <ErrorText>{error}</ErrorText>
+
+            <div className="stack" style={{ marginTop: 16 }}>
+              <button onClick={submitVote} disabled={saving}>
+                {saving ? "Kaydediliyor..." : "Oyu kaydet"}
+              </button>
+              <button
+                className="secondary"
+                onClick={() => setActiveTarget(null)}
+                disabled={saving}
+              >
+                Vazgeç
+              </button>
+            </div>
+          </Card>
+        );
+      })}
     </div>
   );
 }
