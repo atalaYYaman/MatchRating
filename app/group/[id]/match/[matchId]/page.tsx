@@ -6,7 +6,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Badge, Card, ErrorText, Eyebrow, Field, InlineMessage } from "@/components/ui";
 import { api, ApiError } from "@/lib/client-api";
 import { clockTime, countdownLabel, shortDate } from "@/lib/dateFormat";
-import { MatchPhase, PHASE_LABEL } from "@/lib/matchStatus";
+import { MatchPhase } from "@/lib/matchStatus";
+import { PhaseBadge } from "@/components/PhaseBadge";
 
 type Detail = {
   match: {
@@ -137,17 +138,7 @@ export default function MatchDetailPage() {
 
       <Card raised>
         <div className="row" style={{ justifyContent: "space-between" }}>
-          <Badge
-            tone={
-              data.phase === "cancelled"
-                ? "danger"
-                : data.phase === "completed"
-                ? "neutral"
-                : "brand"
-            }
-          >
-            {PHASE_LABEL[data.phase]}
-          </Badge>
+          <PhaseBadge phase={data.phase} />
           <span className="muted">
             {m.match_kind === "ic" ? "Takım içi" : "Dış rakip"}
           </span>

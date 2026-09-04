@@ -176,6 +176,10 @@ export async function DELETE(
     );
   }
 
-  await sql`UPDATE matches SET status = 'cancelled' WHERE id = ${params.matchId}`;
+  // cancelled_at, silme suresinin iptal aninda baslamasi icin sart.
+  await sql`
+    UPDATE matches SET status = 'cancelled', cancelled_at = now()
+    WHERE id = ${params.matchId}
+  `;
   return NextResponse.json({ ok: true });
 }

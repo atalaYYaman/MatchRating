@@ -7,7 +7,8 @@ import { TeamSwitcher } from "@/components/TeamSwitcher";
 import { api, ApiError } from "@/lib/client-api";
 import { useActiveGroup } from "@/lib/active-group";
 import { clockTime, countdownLabel, shortDate } from "@/lib/dateFormat";
-import { MatchPhase, PHASE_LABEL } from "@/lib/matchStatus";
+import { MatchPhase } from "@/lib/matchStatus";
+import { PhaseBadge } from "@/components/PhaseBadge";
 
 type MatchRow = {
   id: string;
@@ -30,18 +31,6 @@ const ACTION_LABEL: Record<"poll" | "rsvp" | "rating", string> = {
   poll: "Anketi cevapla",
   rsvp: "Katılım bildir",
   rating: "Maçı puanla",
-};
-
-// Faz rozeti yalnizca macin durumunu anlatir: yesil = surüyor, gri = bitti,
-// kirmizi = iptal. Amber bilerek disarida birakildi; o renk artik tek bir sey
-// icin ayrildi: "senden bir sey bekleniyor" (bkz. needsMyAction).
-const PHASE_TONE: Record<MatchPhase, BadgeTone> = {
-  rating: "brand",
-  poll: "brand",
-  scheduled: "brand",
-  playing: "brand",
-  completed: "neutral",
-  cancelled: "danger",
 };
 
 // Dort cip yeter: hepsi, senden bir sey beklenenler, gelecek, gecmis.
@@ -148,7 +137,7 @@ export default function MatchesPage() {
             <Card className={m.myAction ? "needs-action" : ""}>
               <div className="row" style={{ justifyContent: "space-between" }}>
                 <div className="row" style={{ gap: 6 }}>
-                  <Badge tone={PHASE_TONE[m.phase]}>{PHASE_LABEL[m.phase]}</Badge>
+                  <PhaseBadge phase={m.phase} />
                   {m.myAction && (
                     <Badge tone="accent">{ACTION_LABEL[m.myAction]}</Badge>
                   )}

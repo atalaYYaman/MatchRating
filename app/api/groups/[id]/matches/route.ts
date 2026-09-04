@@ -5,6 +5,7 @@ import { isGroupMember, isGroupOwner } from "@/lib/groupAccess";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
 import { getActiveSeason } from "@/lib/seasons";
 import { maybeAutoClosePoll } from "@/lib/pollClose";
+import { sweepCancelledMatches } from "@/lib/cancelledSweep";
 
 const MAX_POLL_OPTIONS = 12;
 // Anket varsayilan olarak en erken secenegin baslangicina kadar acik kalir.
@@ -36,6 +37,8 @@ function parseOptions(raw: unknown): OptionInput[] | null {
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
+
+  await sweepCancelledMatches();
 
   const [isMember, matchesRes] = await Promise.all([
     isGroupMember(params.id, session.userId),

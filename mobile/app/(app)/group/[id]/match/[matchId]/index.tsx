@@ -13,7 +13,8 @@ import {
 } from "../../../../../../components/ui";
 import { api, ApiError } from "../../../../../../lib/api";
 import { clockTime, countdownLabel, shortDate } from "../../../../../../lib/format";
-import { MatchPhase, PHASE_LABEL, PHASE_TONE } from "../../../../../../lib/constants";
+import { MatchPhase } from "../../../../../../lib/constants";
+import { PhaseBadge } from "../../../../../../components/PhaseBadge";
 import { border, colors, radius, space, type } from "../../../../../../lib/theme";
 
 type Detail = {
@@ -153,7 +154,7 @@ export default function MatchDetailScreen() {
       {/* Ozet */}
       <Card raised>
         <View style={s.head}>
-          <Badge tone={PHASE_TONE[data.phase]}>{PHASE_LABEL[data.phase]}</Badge>
+          <PhaseBadge phase={data.phase} />
           <Text style={[type.bodyS, { color: colors.textTertiary }]}>
             {m.match_kind === "ic" ? "Takım içi" : "Dış rakip"}
           </Text>

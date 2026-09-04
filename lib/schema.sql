@@ -268,3 +268,20 @@ WHERE m.season_id IS NULL
 -- otomatik kesinlesir (beraberlikte en erken tarih kazanir). Hic oy yoksa
 -- otomatik secim yapilmaz, yonetici elle secer.
 ALTER TABLE matches ADD COLUMN IF NOT EXISTS poll_closes_at TIMESTAMPTZ;
+
+-- ==========================================================================
+-- IPTAL EDILEN MACLARIN OTOMATIK SILINMESI
+-- ==========================================================================
+
+-- Iptal suresi macin OLUSTURULMA degil IPTAL EDILME anindan sayilmali;
+-- aksi halde eski ama yeni iptal edilmis bir mac aninda siliniyordu.
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMPTZ;
+
+-- Sutun eklenmeden once iptal edilmis maclar: iptal ani bilinmiyor,
+-- olusturma anini baz al. Hepsi zaten 1 saatten eski oldugu icin ilk
+-- okumada supurulurler.
+UPDATE matches SET cancelled_at = created_at
+WHERE status = 'cancelled' AND cancelled_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_matches_cancelled_at
+  ON matches (cancelled_at) WHERE status = 'cancelled';

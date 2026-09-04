@@ -3,11 +3,8 @@ import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
 import { maybeAutoClosePoll } from "@/lib/pollClose";
+import { sweepCancelledMatches } from "@/lib/cancelledSweep";
 import { matchPhase, phaseRank } from "@/lib/matchStatus";
-
-// Iptal edilen maclar listelerden hemen duser; bu sureden sonra kalici
-// olarak silinir ki gecmis kalabalik olmasin.
-const CANCELLED_RETENTION_DAYS = 7;
 
 // GET /api/matches            -> kullanicinin tum takimlarindaki maclar
 // GET /api/matches?groupId=X  -> yalnizca o takim
@@ -21,11 +18,7 @@ export async function GET(req: NextRequest) {
 
   // Eskimis iptaller temizlenir. Ayri bir zamanlayici olmadigi icin, tipki
   // puan islemede oldugu gibi, liste okunurken firsatci sekilde yapilir.
-  await sql`
-    DELETE FROM matches
-    WHERE status = 'cancelled'
-      AND created_at < now() - (${CANCELLED_RETENTION_DAYS} || ' days')::interval
-  `;
+  await sweepCancelledMatches();
 
   const matchesRes = await sql`
     SELECT m.id, m.group_id, g.name AS group_name, g.owner_id,

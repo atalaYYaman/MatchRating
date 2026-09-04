@@ -16,7 +16,8 @@ import { api, ApiError } from "../../../lib/api";
 import { useActiveGroup } from "../../../lib/active-group";
 import { useAuth } from "../../../lib/auth-context";
 import { clockTime, countdownLabel, shortDate } from "../../../lib/format";
-import { MatchPhase, PHASE_LABEL, PHASE_TONE } from "../../../lib/constants";
+import { MatchPhase } from "../../../lib/constants";
+import { PhaseBadge } from "../../../components/PhaseBadge";
 import { border, colors, radius, space, type } from "../../../lib/theme";
 
 type MatchRow = {
@@ -174,7 +175,7 @@ export default function MatchesScreen() {
             <View style={[s.card, m.myAction ? s.cardNeedsAction : null]}>
               <View style={s.head}>
                 <View style={{ flexDirection: "row", gap: space[2], flexShrink: 1 }}>
-                  <Badge tone={PHASE_TONE[m.phase]}>{PHASE_LABEL[m.phase]}</Badge>
+                  <PhaseBadge phase={m.phase} />
                   {m.myAction && <Badge tone="accent">{ACTION_LABEL[m.myAction]}</Badge>}
                 </View>
                 <Text style={[type.bodyS, { color: colors.textTertiary }]}>
