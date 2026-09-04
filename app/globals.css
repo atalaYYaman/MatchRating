@@ -53,6 +53,16 @@
   --font-body: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
   --tracking-label: 0.06em;
 
+  /* Tipografi olcegi: alti basamak, baskasi yok. Ara punto eklemek yerine
+     agirlik ve harf araligiyla ayrisin; 17 farkli punto bir olcek degil,
+     birikmis kararlar listesiydi. */
+  --text-label: 11px;    /* etiket, rozet, sekme */
+  --text-caption: 13px;  /* yardimci metin, tablo */
+  --text-body: 15px;     /* govde */
+  --text-heading: 20px;  /* bolum basligi */
+  --text-title: 28px;    /* sayfa basligi */
+  --text-score: 34px;    /* skorbord */
+
   /* 4px tabanli olcek */
   --space-1: 4px;
   --space-2: 8px;
@@ -74,7 +84,7 @@
 body {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: var(--text-body);
   line-height: 1.5;
   background: var(--surface-page);
   color: var(--text-primary);
@@ -93,9 +103,9 @@ h1, h2, h3 {
   color: var(--ink);
 }
 
-h1 { font-size: 28px; }
-h2 { font-size: 22px; }
-h3 { font-size: 18px; }
+h1 { font-size: var(--text-title); }
+h2 { font-size: var(--text-heading); }
+h3 { font-size: var(--text-body); font-weight: 700; }
 
 a {
   color: var(--text-link);
@@ -118,7 +128,7 @@ a:hover {
 
 input, select, textarea {
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: var(--text-body);
   color: var(--text-primary);
   background: var(--surface-card-raised);
   padding: 10px 14px;
@@ -137,7 +147,7 @@ input:focus, select:focus, textarea:focus {
 button {
   font-family: var(--font-body);
   font-weight: 600;
-  font-size: 15px;
+  font-size: var(--text-body);
   background: var(--pitch);
   color: var(--text-on-brand);
   border: 1px solid var(--pitch);
@@ -183,7 +193,7 @@ button.accent {
 }
 
 button.small {
-  font-size: 13px;
+  font-size: var(--text-caption);
   padding: 8px 14px;
   /* Yazisi kucuk ama dokunma alani tam boy. */
   min-height: 44px;
@@ -206,7 +216,7 @@ button.small {
 .field label {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--text-label);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--text-secondary);
@@ -214,7 +224,7 @@ button.small {
 
 .error {
   color: var(--state-danger);
-  font-size: 13px;
+  font-size: var(--text-caption);
 }
 
 table {
@@ -225,7 +235,7 @@ table {
 th {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--text-label);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--text-tertiary);
@@ -235,7 +245,7 @@ th, td {
   text-align: left;
   padding: 8px;
   border-bottom: 1px solid var(--border-default);
-  font-size: 14px;
+  font-size: var(--text-caption);
 }
 
 tr:last-child td {
@@ -246,7 +256,7 @@ tr:last-child td {
 td strong {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 15px;
+  font-size: var(--text-body);
   color: var(--pitch-900);
 }
 
@@ -254,7 +264,7 @@ td strong {
   display: inline-block;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--text-label);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   background: var(--chalk-200);
@@ -348,7 +358,7 @@ td strong {
 .pos-summary {
   margin: 0 0 var(--space-2);
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: var(--text-caption);
 }
 
 .collapse-toggle {
@@ -362,7 +372,7 @@ td strong {
   align-items: center;
   gap: var(--space-2);
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: var(--text-heading);
   font-weight: 700;
   line-height: 1.15;
   text-align: left;
@@ -445,7 +455,7 @@ input[type="range"]:focus {
   font-family: var(--font-display);
   font-weight: 600;
   /* 5 sekme dar telefonlarda sigmasi icin etiket kucuk ve tek satir */
-  font-size: 9.5px;
+  font-size: var(--text-label);
   letter-spacing: 0.02em;
   text-transform: uppercase;
   text-decoration: none;
@@ -499,7 +509,7 @@ input[type="range"]:focus {
   border-bottom: 1px solid var(--border-default);
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--text-label);
   letter-spacing: var(--tracking-label);
   color: var(--text-tertiary);
 }
@@ -515,7 +525,7 @@ input[type="range"]:focus {
   padding: 13px 14px;
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: 15px;
+  font-size: var(--text-body);
   color: var(--ink);
   cursor: pointer;
 }
@@ -540,7 +550,7 @@ input[type="range"]:focus {
 .eyebrow {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--text-label);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--text-tertiary);
@@ -587,13 +597,13 @@ input[type="range"]:focus {
 .score-badge-value {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 22px;
+  font-size: var(--text-heading);
   line-height: 1;
   color: var(--pitch-900);
 }
 
 .score-badge-lg .score-badge-value {
-  font-size: 34px;
+  font-size: var(--text-score);
 }
 
 .inline-msg {
@@ -601,7 +611,7 @@ input[type="range"]:focus {
   border-radius: var(--radius-card);
   padding: var(--space-3);
   margin-bottom: var(--space-3);
-  font-size: 13px;
+  font-size: var(--text-caption);
   background: var(--chalk-200);
   color: var(--ink-700);
 }
@@ -678,7 +688,7 @@ input[type="range"]:focus {
 .ticket-value {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 34px;
+  font-size: var(--text-score);
   line-height: 1;
   color: var(--pitch-900);
 }
@@ -728,7 +738,7 @@ input[type="range"]:focus {
 }
 
 .cta-helper {
-  font-size: 13px;
+  font-size: var(--text-caption);
   color: var(--text-secondary);
   text-align: center;
   margin: 0;
@@ -759,7 +769,7 @@ input[type="range"]:focus {
 .stats-value {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 34px;
+  font-size: var(--text-score);
   line-height: 1;
   color: var(--pitch-900);
 }
@@ -800,12 +810,12 @@ input[type="range"]:focus {
 .big-score {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 34px;
+  font-size: var(--text-score);
   line-height: 1;
   color: var(--pitch-900);
 }
 
-.big-score.muted { color: var(--ink-300); font-size: 34px; }
+.big-score.muted { color: var(--ink-300); font-size: var(--text-score); }
 
 .mvp-row {
   display: flex;
@@ -819,7 +829,7 @@ input[type="range"]:focus {
 .mvp-tag {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 11px;
+  font-size: var(--text-label);
   letter-spacing: var(--tracking-label);
   color: var(--amber-700);
   background: var(--amber-100);
@@ -834,7 +844,7 @@ input[type="range"]:focus {
   gap: 8px;
   padding: 12px 14px;
   border-top: 1px solid var(--border-default);
-  font-size: 13px;
+  font-size: var(--text-caption);
   font-weight: 500;
   color: var(--text-link);
   width: 100%;
@@ -872,7 +882,7 @@ input[type="range"]:focus {
   color: var(--ink);
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 20px;
+  font-size: var(--text-heading);
   line-height: 1.2;
 }
 
@@ -901,7 +911,7 @@ input[type="range"]:focus {
   border-radius: 0;
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: 15px;
+  font-size: var(--text-body);
   color: var(--ink);
   cursor: pointer;
   text-align: left;
@@ -930,14 +940,14 @@ input[type="range"]:focus {
   color: var(--ink);
   font-family: var(--font-body);
   font-weight: 500;
-  font-size: 15px;
+  font-size: var(--text-body);
   cursor: pointer;
   text-align: left;
 }
 
 .segment span {
   font-weight: 400;
-  font-size: 13px;
+  font-size: var(--text-caption);
   color: var(--text-secondary);
 }
 
@@ -970,7 +980,7 @@ input[type="range"]:focus {
   color: var(--ink);
   font-family: var(--font-body);
   font-weight: 500;
-  font-size: 13px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -1005,7 +1015,7 @@ input[type="range"]:focus {
   color: var(--ink);
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: 15px;
+  font-size: var(--text-body);
   cursor: pointer;
   text-align: left;
 }
@@ -1020,7 +1030,7 @@ input[type="range"]:focus {
   background: var(--pitch-100);
 }
 
-.muted { color: var(--text-secondary); font-size: 13px; }
+.muted { color: var(--text-secondary); font-size: var(--text-caption); }
 /* align-items olmadan rozet/pill'ler tam genislige yayiliyor */
 .stack {
   display: flex;
@@ -1063,7 +1073,7 @@ input[type="range"]:focus {
 .slider-value {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 17px;
+  font-size: var(--text-body);
   line-height: 1;
   color: var(--pitch-900);
   font-variant-numeric: tabular-nums;
@@ -1087,7 +1097,7 @@ input[type="range"]:focus {
   border: 1px solid var(--border-default);
   color: var(--ink);
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: var(--text-heading);
   line-height: 1;
 }
 
@@ -1096,7 +1106,7 @@ input[type="range"]:focus {
 .stepper-value {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 26px;
+  font-size: var(--text-title);
   line-height: 1;
   min-width: 34px;
   text-align: center;
@@ -1117,7 +1127,7 @@ input[type="range"]:focus {
   color: var(--ink);
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: 15px;
+  font-size: var(--text-body);
   text-align: left;
   cursor: pointer;
 }
@@ -1133,7 +1143,7 @@ input[type="range"]:focus {
 .pick-mark {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 12px;
+  font-size: var(--text-caption);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--text-tertiary);
@@ -1167,7 +1177,7 @@ input[type="range"]:focus {
 .roster-name { font-weight: 500; }
 
 .roster-meta {
-  font-size: 13px;
+  font-size: var(--text-caption);
   color: var(--text-secondary);
   white-space: nowrap;
 }
@@ -1175,7 +1185,7 @@ input[type="range"]:focus {
 .roster-score {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 15px;
+  font-size: var(--text-body);
   color: var(--pitch-900);
   font-variant-numeric: tabular-nums;
 }
@@ -1189,7 +1199,7 @@ input[type="range"]:focus {
   justify-content: space-between;
   gap: var(--space-3);
   padding: 6px 0;
-  font-size: 13px;
+  font-size: var(--text-caption);
   color: var(--text-secondary);
 }
 
@@ -1213,7 +1223,7 @@ input[type="range"]:focus {
 .skill-avg {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 16px;
+  font-size: var(--text-body);
   color: var(--pitch-900);
   font-variant-numeric: tabular-nums;
 }
@@ -1227,7 +1237,7 @@ input[type="range"]:focus {
   text-align: left;
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 500;
   cursor: pointer;
   display: flex;

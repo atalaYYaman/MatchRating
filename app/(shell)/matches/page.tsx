@@ -170,7 +170,7 @@ export default function MatchesPage() {
                     : `${m.attending_count} katılıyor`}
                 </span>
                 {upcoming && m.scheduled_at && (
-                  <span style={{ color: "var(--text-link)", fontSize: 13, fontWeight: 500 }}>
+                  <span style={{ color: "var(--text-link)", fontSize: "var(--text-caption)", fontWeight: 500 }}>
                     {countdownLabel(m.scheduled_at)}
                   </span>
                 )}

@@ -200,7 +200,7 @@ export default function MatchSquadsScreen() {
             placeholder="Güç (60-90)"
             keyboardType="number-pad"
           />
-          <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: space[2] }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: space[2] }}>
             MEVKİ — ÖNCE BİRİNCİL, SONRA İKİNCİL
           </Text>
           <PositionPicker
@@ -308,7 +308,7 @@ function SquadCard({
     <Card raised>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <View>
-          <Text style={{ fontWeight: "700", color: colors.textPrimary, fontSize: 16 }}>
+          <Text style={{ fontWeight: "700", color: colors.textPrimary, fontSize: 20 }}>
             {title}
           </Text>
           <Text style={{ color: colors.textSecondary }}>{players.length} oyuncu</Text>
@@ -333,7 +333,7 @@ function SquadCard({
                 {p.name}
                 {p.isGuest ? " (misafir)" : ""}
               </Text>
-              <Text style={{ color: colors.textTertiary, fontSize: 12 }}>
+              <Text style={{ color: colors.textTertiary, fontSize: 13 }}>
                 {positionLabel(p.primaryPosition)} / {positionLabel(p.secondaryPosition)}
               </Text>
             </View>

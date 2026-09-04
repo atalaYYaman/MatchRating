@@ -114,7 +114,7 @@ export default function VoteScreen() {
     return (
       <ScrollView style={{ flex: 1, backgroundColor: colors.surfacePage }}>
         <Screen>
-          <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 12, color: colors.textPrimary }}>
+          <Text style={{ fontSize: 20, fontWeight: "700", marginBottom: 12, color: colors.textPrimary }}>
             {target.name} için oy ver
           </Text>
           <ErrorText>{error}</ErrorText>

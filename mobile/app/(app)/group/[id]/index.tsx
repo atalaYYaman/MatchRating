@@ -183,7 +183,7 @@ export default function GroupScreen() {
 
         {group && (
           <Card>
-            <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary }}>
+            <Text style={{ fontSize: 20, fontWeight: "700", color: colors.textPrimary }}>
               {group.name}
             </Text>
             <Text style={{ color: colors.textSecondary, marginTop: 4 }}>
@@ -284,7 +284,7 @@ export default function GroupScreen() {
                     )}
                   </View>
                   {m.nickname && m.account_name && m.nickname !== m.account_name && (
-                    <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
                       ({m.account_name})
                     </Text>
                   )}
@@ -296,7 +296,7 @@ export default function GroupScreen() {
                       : "Henüz oy almadı"}
                   </Text>
                   {m.record.played > 0 && (
-                    <Text style={{ color: colors.textTertiary, marginTop: 2, fontSize: 12 }}>
+                    <Text style={{ color: colors.textTertiary, marginTop: 2, fontSize: 13 }}>
                       {m.record.wins}G {m.record.draws}B {m.record.losses}M
                     </Text>
                   )}

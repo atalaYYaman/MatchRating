@@ -150,15 +150,15 @@ export default function CareerPage() {
                 style={{ justifyContent: "space-between", alignItems: "center", marginTop: 14 }}
               >
                 <div style={{ textAlign: "center" }}>
-                  <div className="muted" style={{ fontSize: 12 }}>BAŞLANGIÇ</div>
-                  <div className="big-score muted" style={{ fontSize: 26 }}>
+                  <div className="eyebrow">BAŞLANGIÇ</div>
+                  <div className="big-score muted" style={{ fontSize: "var(--text-title)" }}>
                     {g.startOverall}
                   </div>
                 </div>
-                <div className="muted" style={{ fontSize: 20 }}>→</div>
+                <div className="muted" style={{ fontSize: "var(--text-heading)" }}>→</div>
                 <div style={{ textAlign: "center" }}>
-                  <div className="muted" style={{ fontSize: 12 }}>ŞİMDİ</div>
-                  <div className="big-score" style={{ fontSize: 26 }}>
+                  <div className="eyebrow">ŞİMDİ</div>
+                  <div className="big-score" style={{ fontSize: "var(--text-title)" }}>
                     {g.currentOverall}
                   </div>
                 </div>
@@ -216,7 +216,7 @@ export default function CareerPage() {
 
           {career.strengths.length > 0 && (
             <Card style={{ marginTop: 8 }}>
-              <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+              <p className="muted" style={{ margin: 0, fontSize: "var(--text-caption)" }}>
                 Takım arkadaşların seni en çok bu yönünle övdü
               </p>
               <h2 style={{ margin: "6px 0 0" }}>
@@ -226,7 +226,7 @@ export default function CareerPage() {
                 {career.strengths[0].count} maçta öne çıkan yönün seçildi
               </p>
               {career.weaknesses.length > 0 && (
-                <p className="muted" style={{ margin: "12px 0 0", fontSize: 13 }}>
+                <p className="muted" style={{ margin: "12px 0 0", fontSize: "var(--text-caption)" }}>
                   En çok geliştirmen istenen yön:{" "}
                   <strong>{skillLabel(career.weaknesses[0].skill)}</strong> (
                   {career.weaknesses[0].count} maç)
@@ -238,7 +238,7 @@ export default function CareerPage() {
           {career.wonWith.length > 0 && (
             <Card>
               <Eyebrow>UĞURLU TAKIM ARKADAŞLARIN</Eyebrow>
-              <p className="muted" style={{ margin: "6px 0 10px", fontSize: 13 }}>
+              <p className="muted" style={{ margin: "6px 0 10px", fontSize: "var(--text-caption)" }}>
                 Aynı takımda oynayıp en çok birlikte kazandığın kişiler.
               </p>
               <div className="roster">
@@ -260,7 +260,7 @@ export default function CareerPage() {
           {career.lostTo.length > 0 && (
             <Card>
               <Eyebrow>KARŞINDA ZORLANDIKLARIN</Eyebrow>
-              <p className="muted" style={{ margin: "6px 0 10px", fontSize: 13 }}>
+              <p className="muted" style={{ margin: "6px 0 10px", fontSize: "var(--text-caption)" }}>
                 Karşı takımdayken en çok kaybettiğin kişiler.
               </p>
               <div className="roster">
@@ -284,7 +284,7 @@ export default function CareerPage() {
             <>
               <Eyebrow>PUAN ZAMAN ŞERİDİ</Eyebrow>
               <Card style={{ marginTop: 8 }}>
-                <p className="muted" style={{ margin: "0 0 12px", fontSize: 13 }}>
+                <p className="muted" style={{ margin: "0 0 12px", fontSize: "var(--text-caption)" }}>
                   Her maç sonu puanlamasının yetenek puanlarına toplam etkisi.
                 </p>
                 <div className="timeline">
@@ -337,7 +337,7 @@ export default function CareerPage() {
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div style={{ textAlign: "center", flex: 1 }}>
-      <div className="big-score" style={{ fontSize: 24 }}>{value}</div>
+      <div className="big-score" style={{ fontSize: "var(--text-heading)" }}>{value}</div>
       <div className="eyebrow">{label}</div>
     </div>
   );

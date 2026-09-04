@@ -112,7 +112,7 @@ export default function SeasonSummaryScreen() {
               marginTop: space[2],
             }}
           >
-            <Text style={{ fontSize: 18, fontWeight: "700", color: colors.textPrimary }}>
+            <Text style={{ fontSize: 20, fontWeight: "700", color: colors.textPrimary }}>
               {summary.mvp.name}
             </Text>
             <ScoreBadge value={summary.mvp.wins} label="GALİBİYET" />

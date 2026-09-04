@@ -133,14 +133,14 @@ export default function TeamsScreen() {
               onPress={() => setTeamCount((n) => Math.max(2, n - 1))}
               style={{ padding: 10, borderWidth: 1, borderColor: colors.borderDefault, borderRadius: 8 }}
             >
-              <Text style={{ fontSize: 16 }}>−</Text>
+              <Text style={{ fontSize: 20 }}>−</Text>
             </Pressable>
-            <Text style={{ fontSize: 18, fontWeight: "700" }}>{teamCount}</Text>
+            <Text style={{ fontSize: 20, fontWeight: "700" }}>{teamCount}</Text>
             <Pressable
               onPress={() => setTeamCount((n) => n + 1)}
               style={{ padding: 10, borderWidth: 1, borderColor: colors.borderDefault, borderRadius: 8 }}
             >
-              <Text style={{ fontSize: 16 }}>+</Text>
+              <Text style={{ fontSize: 20 }}>+</Text>
             </Pressable>
           </View>
         </Card>
@@ -184,7 +184,7 @@ export default function TeamsScreen() {
             placeholder="Güç (60-90)"
             keyboardType="number-pad"
           />
-          <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 8 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 8 }}>
             MEVKİ — ÖNCE BİRİNCİL, SONRA İKİNCİL
           </Text>
           <PositionPicker

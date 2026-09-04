@@ -94,7 +94,7 @@ export default function SeasonSummaryPage() {
       </p>
 
       {live && (
-        <p className="muted" style={{ fontSize: 13 }}>
+        <p className="muted" style={{ fontSize: "var(--text-caption)" }}>
           Bu sezon devam ediyor; aşağıdaki özet o ana kadarki duruma göre canlı
           hesaplanır.
         </p>
@@ -106,7 +106,7 @@ export default function SeasonSummaryPage() {
         <Card raised>
           <Eyebrow>SEZONUN OYUNCUSU</Eyebrow>
           <div className="row" style={{ justifyContent: "space-between", marginTop: 8 }}>
-            <strong style={{ fontSize: 18 }}>{summary.mvp.name}</strong>
+            <strong style={{ fontSize: "var(--text-heading)" }}>{summary.mvp.name}</strong>
             <ScoreBadge value={summary.mvp.wins} label="GALİBİYET" />
           </div>
         </Card>

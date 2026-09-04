@@ -115,7 +115,7 @@ export default function BreakdownScreen() {
                     {s.label}: {b.average}
                   </Text>
                   {b.votes.map((v) => (
-                    <Text key={v.voterId} style={{ color: colors.textSecondary, fontSize: 12 }}>
+                    <Text key={v.voterId} style={{ color: colors.textSecondary, fontSize: 13 }}>
                       {v.voterName}: {v.score}
                     </Text>
                   ))}

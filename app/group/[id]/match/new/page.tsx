@@ -196,7 +196,7 @@ export default function NewMatchPage() {
                 </button>
               ))}
             </div>
-            <p className="muted" style={{ margin: "8px 0 0", fontSize: 13 }}>
+            <p className="muted" style={{ margin: "8px 0 0", fontSize: "var(--text-caption)" }}>
               {rsvpLeadHours === 0
                 ? "Katılım maç saatine kadar açık kalır."
                 : `Katılım, maç saatinden ${rsvpLeadHours} saat önce kapanır.`}
@@ -268,7 +268,7 @@ export default function NewMatchPage() {
                 </button>
               ))}
             </div>
-            <p className="muted" style={{ margin: "8px 0 0", fontSize: 13 }}>
+            <p className="muted" style={{ margin: "8px 0 0", fontSize: "var(--text-caption)" }}>
               Süre dolunca en çok oy alan seçenek otomatik kesinleşir; beraberlikte
               en erken tarih seçilir. Anket her hâlükârda en erken seçeneğin saatinde
               kapanır.

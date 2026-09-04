@@ -458,7 +458,7 @@ export default function MatchDetailScreen() {
             >
               <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.textPrimary, fontWeight: "500" }}>{r.name}</Text>
-                <Text style={{ color: colors.textTertiary, fontSize: 12 }}>
+                <Text style={{ color: colors.textTertiary, fontSize: 13 }}>
                   {r.raterCount} oy
                 </Text>
               </View>

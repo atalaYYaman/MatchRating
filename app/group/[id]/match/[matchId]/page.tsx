@@ -151,7 +151,7 @@ export default function MatchDetailPage() {
         </h1>
         {m.location && <div className="muted">{m.location}</div>}
         {m.scheduled_at && new Date(m.scheduled_at).getTime() > Date.now() && (
-          <div style={{ color: "var(--text-link)", fontSize: 13, fontWeight: 500 }}>
+          <div style={{ color: "var(--text-link)", fontSize: "var(--text-caption)", fontWeight: 500 }}>
             {countdownLabel(m.scheduled_at)}
           </div>
         )}
@@ -167,14 +167,14 @@ export default function MatchDetailPage() {
             style={{ justifyContent: "space-around", alignItems: "center", marginTop: 12 }}
           >
             <div style={{ textAlign: "center", flex: 1 }}>
-              <div className="muted" style={{ fontSize: 13 }}>
+              <div className="muted" style={{ fontSize: "var(--text-caption)" }}>
                 {m.home_label ?? (m.match_kind === "ic" ? "Takım 1" : "Biz")}
               </div>
               <div className="big-score">{m.home_score}</div>
             </div>
             <span className="big-score muted">–</span>
             <div style={{ textAlign: "center", flex: 1 }}>
-              <div className="muted" style={{ fontSize: 13 }}>
+              <div className="muted" style={{ fontSize: "var(--text-caption)" }}>
                 {m.away_label ?? (m.match_kind === "ic" ? "Takım 2" : "Rakip")}
               </div>
               <div className="big-score">{m.away_score}</div>
@@ -190,7 +190,7 @@ export default function MatchDetailPage() {
           {m.poll_closes_at && (
             <p
               className="muted"
-              style={{ margin: "8px 0 0", fontSize: 13 }}
+              style={{ margin: "8px 0 0", fontSize: "var(--text-caption)" }}
             >
               {data.pollExpired
                 ? "Anket süresi doldu. Hiç oy verilmediği için yönetici bir seçenek seçmeli."
@@ -372,7 +372,7 @@ export default function MatchDetailPage() {
           )}
 
           {data.rsvpClosesAt && (
-            <p className="muted" style={{ margin: "0 0 10px", fontSize: 13 }}>
+            <p className="muted" style={{ margin: "0 0 10px", fontSize: "var(--text-caption)" }}>
               {new Date(data.rsvpClosesAt).getTime() > Date.now()
                 ? `Katılım ${shortDate(data.rsvpClosesAt)} ${clockTime(data.rsvpClosesAt)}'de kapanıyor.`
                 : "Katılım kapandı."}
@@ -445,7 +445,7 @@ export default function MatchDetailPage() {
       {data.rating.results.length > 0 && (
         <Card>
           <Eyebrow>MAÇ PUANLARI</Eyebrow>
-          <p className="muted" style={{ margin: "6px 0 4px", fontSize: 13 }}>
+          <p className="muted" style={{ margin: "6px 0 4px", fontSize: "var(--text-caption)" }}>
             Oyuncuların bu maçta arkadaşlarından aldığı ortalama puan (10 üzerinden).
           </p>
           <div className="roster">

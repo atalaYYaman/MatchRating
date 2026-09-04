@@ -92,7 +92,7 @@ export default function SeasonsScreen() {
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontWeight: "700", color: colors.textPrimary }}>{s.name}</Text>
-                <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>
                   {s.matchCount} maç ·{" "}
                   {s.status === "closed" && s.closed_at
                     ? `${shortDate(s.created_at)} – ${shortDate(s.closed_at)}`

@@ -94,22 +94,18 @@ export const fonts = {
 };
 
 // typography.css karsiligi. RN'de "font" kisayolu olmadigi icin acilmis hali.
+// Tipografi olcegi: alti basamak, baskasi yok.
+//   11 etiket · 13 yardimci · 15 govde · 20 baslik · 28 sayfa · 34 skor
+// Ara punto eklemek yerine agirlik ve harf araligiyla ayrilir. Webdeki
+// app/globals.css icindeki --text-* degiskenleriyle ayni degerler.
 export const type = {
-  displayXl: { fontFamily: fonts.display, fontSize: 56, lineHeight: 59 },
-  displayL: { fontFamily: fonts.display, fontSize: 40, lineHeight: 43 },
   displayM: { fontFamily: fonts.display, fontSize: 28, lineHeight: 32 },
   displayS: { fontFamily: fonts.displaySemi, fontSize: 20, lineHeight: 24 },
 
   scoreL: { fontFamily: fonts.displayExtra, fontSize: 34, lineHeight: 34 },
-  scoreM: { fontFamily: fonts.displayExtra, fontSize: 22, lineHeight: 22 },
+  scoreM: { fontFamily: fonts.displayExtra, fontSize: 20, lineHeight: 22 },
   scoreS: { fontFamily: fonts.display, fontSize: 15, lineHeight: 15 },
 
-  labelM: {
-    fontFamily: fonts.displaySemi,
-    fontSize: 13,
-    lineHeight: 16,
-    letterSpacing: 0.78,
-  },
   labelS: {
     fontFamily: fonts.displaySemi,
     fontSize: 11,
@@ -117,10 +113,8 @@ export const type = {
     letterSpacing: 0.66,
   },
 
-  bodyL: { fontFamily: fonts.body, fontSize: 17, lineHeight: 26 },
   bodyM: { fontFamily: fonts.body, fontSize: 15, lineHeight: 23 },
   bodyS: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19 },
   bodyMMedium: { fontFamily: fonts.bodyMedium, fontSize: 15, lineHeight: 23 },
   bodySMedium: { fontFamily: fonts.bodyMedium, fontSize: 13, lineHeight: 19 },
-  caption: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16 },
 } as const;

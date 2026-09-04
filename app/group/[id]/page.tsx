@@ -239,7 +239,7 @@ export default function GroupPage() {
                           {m.name}
                           {isGroupOwner && <span className="pill" style={{ marginLeft: 6 }}>yönetici</span>}
                           {m.nickname && m.account_name && m.nickname !== m.account_name && (
-                            <span style={{ color: "#888", marginLeft: 6, fontSize: 12 }}>
+                            <span className="muted" style={{ marginLeft: 6, fontSize: "var(--text-caption)" }}>
                               ({m.account_name})
                             </span>
                           )}
@@ -311,7 +311,7 @@ export default function GroupPage() {
           {refreshing ? "Yenileniyor..." : "Yenile"}
         </button>
       </div>
-      <p style={{ color: "#888", fontSize: 13, margin: "4px 0 8px" }}>
+      <p style={{ color: "#888", fontSize: "var(--text-caption)", margin: "4px 0 8px" }}>
         İsim yanındaki oran, oyuncuyu oylayan üye / oylayabilecek üye sayısıdır
         ({possibleVoters} kişi oylayabilir).
       </p>
