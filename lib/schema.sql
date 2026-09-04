@@ -259,3 +259,12 @@ FROM seasons s
 WHERE m.season_id IS NULL
   AND s.group_id = m.group_id
   AND s.status = 'active';
+
+-- ==========================================================================
+-- ANKET KAPANIS TARIHI
+-- ==========================================================================
+
+-- Anket bu ana kadar acik kalir; sure dolunca en cok oy alan secenek
+-- otomatik kesinlesir (beraberlikte en erken tarih kazanir). Hic oy yoksa
+-- otomatik secim yapilmaz, yonetici elle secer.
+ALTER TABLE matches ADD COLUMN IF NOT EXISTS poll_closes_at TIMESTAMPTZ;

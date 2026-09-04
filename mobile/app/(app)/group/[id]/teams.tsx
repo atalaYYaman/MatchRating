@@ -3,11 +3,18 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { Button, Card, ErrorText, Field, Label, Screen } from "../../../../components/ui";
 import { api, ApiError } from "../../../../lib/api";
-import { positionLabel } from "../../../../lib/constants";
+import { PositionKey, positionLabel } from "../../../../lib/constants";
+import { PositionPicker } from "../../../../components/PositionPicker";
 import { colors } from "../../../../lib/theme";
 
 type Rating = { userId: string; name: string; overall: number };
-type Guest = { id: string; name: string; overall: number };
+type Guest = {
+  id: string;
+  name: string;
+  overall: number;
+  primaryPosition: PositionKey | "";
+  secondaryPosition: PositionKey | "";
+};
 type TeamPlayer = {
   userId: string;
   name: string;
@@ -30,6 +37,8 @@ export default function TeamsScreen() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [guestName, setGuestName] = useState("");
   const [guestOverall, setGuestOverall] = useState("75");
+  const [guestPrimary, setGuestPrimary] = useState<PositionKey | "">("");
+  const [guestSecondary, setGuestSecondary] = useState<PositionKey | "">("");
 
   const [teamCount, setTeamCount] = useState(2);
   const [teams, setTeams] = useState<Team[] | null>(null);
@@ -69,9 +78,20 @@ export default function TeamsScreen() {
       setError("Misafir adı ve 60-90 arası güç puanı girmelisin.");
       return;
     }
-    setGuests((prev) => [...prev, { id: `guest-${Date.now()}`, name, overall }]);
+    setGuests((prev) => [
+      ...prev,
+      {
+        id: `guest-${Date.now()}`,
+        name,
+        overall,
+        primaryPosition: guestPrimary,
+        secondaryPosition: guestSecondary,
+      },
+    ]);
     setGuestName("");
     setGuestOverall("75");
+    setGuestPrimary("");
+    setGuestSecondary("");
     setError(null);
   }
 
@@ -86,7 +106,12 @@ export default function TeamsScreen() {
       const data = await api.post<{ teams: Team[] }>(`/api/groups/${id}/teams`, {
         teamCount,
         playerIds: Array.from(selected),
-        guests: guests.map((g) => ({ name: g.name, overall: g.overall })),
+        guests: guests.map((g) => ({
+          name: g.name,
+          overall: g.overall,
+          primaryPosition: g.primaryPosition || null,
+          secondaryPosition: g.secondaryPosition || null,
+        })),
       });
       setTeams(data.teams);
     } catch (err) {
@@ -159,6 +184,17 @@ export default function TeamsScreen() {
             placeholder="Güç (60-90)"
             keyboardType="number-pad"
           />
+          <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 8 }}>
+            MEVKİ — ÖNCE BİRİNCİL, SONRA İKİNCİL
+          </Text>
+          <PositionPicker
+            primary={guestPrimary}
+            secondary={guestSecondary}
+            onChange={(next) => {
+              setGuestPrimary(next.primary);
+              setGuestSecondary(next.secondary);
+            }}
+          />
           <Button title="Misafir ekle" variant="secondary" onPress={addGuest} />
           {guests.map((g) => (
             <View
@@ -172,6 +208,7 @@ export default function TeamsScreen() {
             >
               <Text style={{ color: colors.textPrimary }}>
                 {g.name} · {g.overall}
+                {g.primaryPosition ? ` · ${positionLabel(g.primaryPosition)}` : ""}
               </Text>
               <Pressable onPress={() => removeGuest(g.id)}>
                 <Text style={{ color: colors.stateDanger }}>Kaldır</Text>

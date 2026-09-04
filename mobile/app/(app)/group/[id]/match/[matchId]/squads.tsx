@@ -11,7 +11,8 @@ import {
   ScoreBadge,
 } from "../../../../../../components/ui";
 import { api, ApiError } from "../../../../../../lib/api";
-import { positionLabel } from "../../../../../../lib/constants";
+import { PositionKey, positionLabel } from "../../../../../../lib/constants";
+import { PositionPicker } from "../../../../../../components/PositionPicker";
 import { colors, space } from "../../../../../../lib/theme";
 
 type SquadPlayer = {
@@ -32,7 +33,13 @@ type Detail = {
   squads: Squads | null;
 };
 
-type Guest = { id: string; name: string; overall: number };
+type Guest = {
+  id: string;
+  name: string;
+  overall: number;
+  primaryPosition: PositionKey | "";
+  secondaryPosition: PositionKey | "";
+};
 
 export default function MatchSquadsScreen() {
   const { id, matchId } = useLocalSearchParams<{ id: string; matchId: string }>();
@@ -44,6 +51,8 @@ export default function MatchSquadsScreen() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [guestName, setGuestName] = useState("");
   const [guestOverall, setGuestOverall] = useState("75");
+  const [guestPrimary, setGuestPrimary] = useState<PositionKey | "">("");
+  const [guestSecondary, setGuestSecondary] = useState<PositionKey | "">("");
 
   const load = useCallback(async () => {
     try {
@@ -68,9 +77,20 @@ export default function MatchSquadsScreen() {
       setError("Misafir adı ve 60-90 arası güç puanı girmelisin.");
       return;
     }
-    setGuests((prev) => [...prev, { id: `guest-${Date.now()}`, name, overall }]);
+    setGuests((prev) => [
+      ...prev,
+      {
+        id: `guest-${Date.now()}`,
+        name,
+        overall,
+        primaryPosition: guestPrimary,
+        secondaryPosition: guestSecondary,
+      },
+    ]);
     setGuestName("");
     setGuestOverall("75");
+    setGuestPrimary("");
+    setGuestSecondary("");
     setError(null);
   }
 
@@ -83,7 +103,12 @@ export default function MatchSquadsScreen() {
     setError(null);
     try {
       await api.post(`/api/groups/${id}/matches/${matchId}/squads`, {
-        guests: guests.map((g) => ({ name: g.name, overall: g.overall })),
+        guests: guests.map((g) => ({
+          name: g.name,
+          overall: g.overall,
+          primaryPosition: g.primaryPosition || null,
+          secondaryPosition: g.secondaryPosition || null,
+        })),
       });
       await load();
     } catch (err) {
@@ -175,6 +200,17 @@ export default function MatchSquadsScreen() {
             placeholder="Güç (60-90)"
             keyboardType="number-pad"
           />
+          <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: space[2] }}>
+            MEVKİ — ÖNCE BİRİNCİL, SONRA İKİNCİL
+          </Text>
+          <PositionPicker
+            primary={guestPrimary}
+            secondary={guestSecondary}
+            onChange={(next) => {
+              setGuestPrimary(next.primary);
+              setGuestSecondary(next.secondary);
+            }}
+          />
           <Button title="Misafir ekle" variant="secondary" onPress={addGuest} />
           {guests.map((g) => (
             <View
@@ -188,6 +224,7 @@ export default function MatchSquadsScreen() {
             >
               <Text style={{ color: colors.textPrimary }}>
                 {g.name} · {g.overall}
+                {g.primaryPosition ? ` · ${positionLabel(g.primaryPosition)}` : ""}
               </Text>
               <Text style={{ color: colors.stateDanger }} onPress={() => removeGuest(g.id)}>
                 Kaldır

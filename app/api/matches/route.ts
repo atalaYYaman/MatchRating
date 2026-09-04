@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
+import { maybeAutoClosePoll } from "@/lib/pollClose";
 import { matchPhase, phaseRank } from "@/lib/matchStatus";
 
 // Iptal edilen maclar listelerden hemen duser; bu sureden sonra kalici
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest) {
     SELECT m.id, m.group_id, g.name AS group_name, g.owner_id,
            m.mode, m.match_kind, m.required_players, m.note,
            m.scheduled_at, m.location, m.status, m.ratings_processed_at,
-           m.created_at,
+           m.created_at, m.poll_closes_at,
            COUNT(DISTINCT a.user_id) FILTER (WHERE a.status = 'yes')::int AS attending_count,
            COUNT(DISTINCT p.user_id)::int AS poll_response_count
     FROM matches m
@@ -43,6 +44,31 @@ export async function GET(req: NextRequest) {
     ORDER BY COALESCE(m.scheduled_at, m.created_at) DESC
     LIMIT 100
   `;
+
+  // Suresi dolmus anketleri kapat: en cok oy alan secenek kesinlesir.
+  const expiredPolls = matchesRes.rows.filter(
+    (m) =>
+      m.status === "poll_open" &&
+      m.poll_closes_at &&
+      new Date(m.poll_closes_at as string).getTime() <= Date.now()
+  );
+  if (expiredPolls.length > 0) {
+    const closed = await Promise.all(
+      expiredPolls.map(async (m) => ({
+        id: m.id as string,
+        result: await maybeAutoClosePoll(m.id as string),
+      }))
+    );
+    for (const { id, result } of closed) {
+      if (!result.closed) continue;
+      const row = matchesRes.rows.find((r) => r.id === id);
+      if (row) {
+        row.status = "scheduled";
+        row.scheduled_at = result.startsAt;
+        row.location = result.location;
+      }
+    }
+  }
 
   // Oynanmis ama henuz islenmemis maclari burada isle (ayri cron yok).
   const pending = matchesRes.rows.filter(

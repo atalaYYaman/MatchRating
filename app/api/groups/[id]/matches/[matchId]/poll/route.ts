@@ -15,7 +15,7 @@ export async function POST(
   const [isMember, matchRes] = await Promise.all([
     isGroupMember(params.id, session.userId),
     sql`
-      SELECT id, mode, status FROM matches
+      SELECT id, mode, status, poll_closes_at FROM matches
       WHERE id = ${params.matchId} AND group_id = ${params.id}
     `,
   ]);
@@ -30,6 +30,16 @@ export async function POST(
   }
   if (match.status !== "poll_open") {
     return NextResponse.json({ error: "Anket kapanmış." }, { status: 400 });
+  }
+  // Anket suresi dolduysa yeni oy alinmaz.
+  if (
+    match.poll_closes_at &&
+    new Date(match.poll_closes_at as string).getTime() <= Date.now()
+  ) {
+    return NextResponse.json(
+      { error: "Anket süresi doldu, oy verilemez." },
+      { status: 400 }
+    );
   }
 
   const body = await req.json().catch(() => ({}));

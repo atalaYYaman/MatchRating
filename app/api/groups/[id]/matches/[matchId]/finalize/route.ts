@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { isGroupOwner } from "@/lib/groupAccess";
+import { finalizeMatchOption } from "@/lib/pollClose";
 
 // POST: { optionId } — anketten bir secenegi kesinlestirir ve maci planlar.
 // Secenegi isaretleyenler otomatik "katiliyor", "katilamam" diyenler
@@ -47,28 +48,11 @@ export async function POST(
   const option = optionRes.rows[0];
   if (!option) return NextResponse.json({ error: "Geçersiz seçenek." }, { status: 400 });
 
-  await sql`
-    UPDATE matches
-    SET status = 'scheduled', scheduled_at = ${option.starts_at}, location = ${option.location}
-    WHERE id = ${params.matchId}
-  `;
-
-  // Anketteki cevaplardan yoklamayi onceden doldur.
-  await sql`
-    INSERT INTO match_attendance (match_id, user_id, status)
-    SELECT ${params.matchId}, v.user_id, 'yes'
-    FROM match_poll_option_votes v
-    WHERE v.option_id = ${optionId}
-    ON CONFLICT (match_id, user_id)
-    DO UPDATE SET status = EXCLUDED.status, updated_at = now()
-  `;
-  await sql`
-    INSERT INTO match_attendance (match_id, user_id, status)
-    SELECT ${params.matchId}, r.user_id, 'no'
-    FROM match_poll_responses r
-    WHERE r.match_id = ${params.matchId} AND r.available = false
-    ON CONFLICT (match_id, user_id) DO NOTHING
-  `;
+  await finalizeMatchOption(params.matchId, {
+    id: option.id as string,
+    starts_at: option.starts_at as string,
+    location: option.location as string,
+  });
 
   return NextResponse.json({
     ok: true,

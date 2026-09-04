@@ -14,7 +14,7 @@ export async function POST(
   const [isMember, matchRes] = await Promise.all([
     isGroupMember(params.id, session.userId),
     sql`
-      SELECT id, status, scheduled_at FROM matches
+      SELECT id, status, scheduled_at, rsvp_deadline FROM matches
       WHERE id = ${params.matchId} AND group_id = ${params.id}
     `,
   ]);
@@ -30,12 +30,15 @@ export async function POST(
       { status: 400 }
     );
   }
-  if (
-    match.scheduled_at &&
-    new Date(match.scheduled_at as string).getTime() <= Date.now()
-  ) {
+  // Yoklama, ayri bir son tarih verilmediyse mac saatinde kapanir.
+  const closesAt = (match.rsvp_deadline as string | null) ?? (match.scheduled_at as string | null);
+  if (closesAt && new Date(closesAt).getTime() <= Date.now()) {
     return NextResponse.json(
-      { error: "Maç saati geçtiği için yoklama değiştirilemez." },
+      {
+        error: match.rsvp_deadline
+          ? "Yoklama süresi doldu, katılım değiştirilemez."
+          : "Maç saati geçtiği için yoklama değiştirilemez.",
+      },
       { status: 400 }
     );
   }

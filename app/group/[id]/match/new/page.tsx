@@ -18,6 +18,22 @@ function defaultStart() {
   return toLocalInputValue(d);
 }
 
+// Yoklama, mac saatinden kac saat once kapansin. 0 = mac saati (varsayilan).
+const RSVP_PRESETS = [
+  { hours: 0, label: "Maç saati" },
+  { hours: 1, label: "1 saat önce" },
+  { hours: 3, label: "3 saat önce" },
+  { hours: 24, label: "1 gün önce" },
+] as const;
+
+// Anket kac gun acik kalsin.
+const POLL_PRESETS = [
+  { days: 1, label: "1 gün" },
+  { days: 2, label: "2 gün" },
+  { days: 3, label: "3 gün" },
+  { days: 7, label: "1 hafta" },
+] as const;
+
 export default function NewMatchPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -34,6 +50,11 @@ export default function NewMatchPage() {
   const [options, setOptions] = useState<Option[]>([]);
   const [draftDate, setDraftDate] = useState(defaultStart());
   const [draftLocation, setDraftLocation] = useState("");
+
+  // Yoklama kapanisi: mac saatinden ne kadar once (saat). 0 = mac saati.
+  const [rsvpLeadHours, setRsvpLeadHours] = useState(0);
+  // Anket suresi: kac gun acik kalsin.
+  const [pollDays, setPollDays] = useState(2);
 
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -66,12 +87,20 @@ export default function NewMatchPage() {
       if (!location.trim()) return setError("Konum girmelisin.");
       body.scheduledAt = new Date(startsAt).toISOString();
       body.location = location.trim();
+      if (rsvpLeadHours > 0) {
+        body.rsvpDeadline = new Date(
+          new Date(startsAt).getTime() - rsvpLeadHours * 60 * 60 * 1000
+        ).toISOString();
+      }
     } else {
       if (options.length === 0) return setError("En az bir anket seçeneği ekle.");
       body.options = options.map((o) => ({
         startsAt: new Date(o.startsAt).toISOString(),
         location: o.location,
       }));
+      body.pollClosesAt = new Date(
+        Date.now() + pollDays * 24 * 60 * 60 * 1000
+      ).toISOString();
     }
 
     setSaving(true);
@@ -152,6 +181,27 @@ export default function NewMatchPage() {
               placeholder="Örn: Yıldız Halı Saha, Saha 2"
             />
           </div>
+
+          <div style={{ marginTop: 8 }}>
+            <Eyebrow>YOKLAMA NE ZAMAN KAPANSIN?</Eyebrow>
+            <div className="chips" style={{ marginTop: 8 }}>
+              {RSVP_PRESETS.map((p) => (
+                <button
+                  key={p.hours}
+                  type="button"
+                  className={`chip ${rsvpLeadHours === p.hours ? "chip-on" : ""}`}
+                  onClick={() => setRsvpLeadHours(p.hours)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <p className="muted" style={{ margin: "8px 0 0", fontSize: 13 }}>
+              {rsvpLeadHours === 0
+                ? "Katılım maç saatine kadar açık kalır."
+                : `Katılım, maç saatinden ${rsvpLeadHours} saat önce kapanır.`}
+            </p>
+          </div>
         </Card>
       ) : (
         <Card>
@@ -202,6 +252,27 @@ export default function NewMatchPage() {
             <button className="secondary small" onClick={addOption}>
               Seçenek ekle
             </button>
+          </div>
+
+          <div style={{ marginTop: 20 }}>
+            <Eyebrow>ANKET NE KADAR AÇIK KALSIN?</Eyebrow>
+            <div className="chips" style={{ marginTop: 8 }}>
+              {POLL_PRESETS.map((p) => (
+                <button
+                  key={p.days}
+                  type="button"
+                  className={`chip ${pollDays === p.days ? "chip-on" : ""}`}
+                  onClick={() => setPollDays(p.days)}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <p className="muted" style={{ margin: "8px 0 0", fontSize: 13 }}>
+              Süre dolunca en çok oy alan seçenek otomatik kesinleşir; beraberlikte
+              en erken tarih seçilir. Anket her hâlükârda en erken seçeneğin saatinde
+              kapanır.
+            </p>
           </div>
         </Card>
       )}

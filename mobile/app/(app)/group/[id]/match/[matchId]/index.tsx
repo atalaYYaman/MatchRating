@@ -29,6 +29,7 @@ type Detail = {
     away_score: number | null;
     home_label: string | null;
     away_label: string | null;
+    poll_closes_at: string | null;
   };
   isOwner: boolean;
   phase: MatchPhase;
@@ -54,6 +55,8 @@ type Detail = {
     home: { id: string; name: string; isGuest: boolean; overall: number }[];
     away: { id: string; name: string; isGuest: boolean; overall: number }[];
   } | null;
+  pollExpired: boolean;
+  rsvpClosesAt: string | null;
 };
 
 export default function MatchDetailScreen() {
@@ -217,6 +220,15 @@ export default function MatchDetailScreen() {
       {isPoll && (
         <Card>
           <Label>Hangi seçeneklere katılabilirsin?</Label>
+          {m.poll_closes_at && (
+            <Text
+              style={[type.bodyS, { color: colors.textSecondary, marginBottom: space[2] }]}
+            >
+              {data.pollExpired
+                ? "Anket süresi doldu. Hiç oy verilmediği için yönetici bir seçenek seçmeli."
+                : `Anket ${shortDate(m.poll_closes_at)} ${clockTime(m.poll_closes_at)}'de kapanıyor; en çok oy alan otomatik kesinleşir.`}
+            </Text>
+          )}
           {data.options.map((o) => {
             const on = picked.has(o.id);
             return (
@@ -381,6 +393,16 @@ export default function MatchDetailScreen() {
               </View>
             </View>
           ) : null}
+
+          {data.rsvpClosesAt && (
+            <Text
+              style={[type.bodyS, { color: colors.textSecondary, marginBottom: space[2] }]}
+            >
+              {new Date(data.rsvpClosesAt).getTime() > Date.now()
+                ? `Katılım ${shortDate(data.rsvpClosesAt)} ${clockTime(data.rsvpClosesAt)}'de kapanıyor.`
+                : "Katılım kapandı."}
+            </Text>
+          )}
 
           {attendees.length === 0 ? (
             <Text style={[type.bodyS, { color: colors.textSecondary }]}>

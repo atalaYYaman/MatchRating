@@ -5,6 +5,7 @@ import { isGroupMember } from "@/lib/groupAccess";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
 import { matchPhase, ratingDeadline } from "@/lib/matchStatus";
 import { getMatchSquads } from "@/lib/squads";
+import { isPollExpired, maybeAutoClosePoll } from "@/lib/pollClose";
 
 export async function GET(
   _req: NextRequest,
@@ -18,7 +19,9 @@ export async function GET(
     return NextResponse.json({ error: "Bu takıma erişiminiz yok." }, { status: 403 });
   }
 
-  // Mac oynandiysa ve kosullar saglaniyorsa puanlari isle.
+  // Anket suresi dolduysa en cok oy alani kesinlestir; mac oynandiysa
+  // puanlari isle. Ayri bir cron gerekmesin diye okuma aninda yapiliyor.
+  await maybeAutoClosePoll(params.matchId);
   await maybeProcessMatchRatings(params.matchId);
 
   const [matchRes, optionsRes, responsesRes, optionVotesRes, attendanceRes, myRatingsRes, ratingResultsRes, squads] =
@@ -26,7 +29,8 @@ export async function GET(
       sql`
         SELECT id, group_id, created_by, mode, match_kind, required_players, note,
                scheduled_at, location, status, ratings_processed_at, created_at,
-               home_score, away_score, home_label, away_label
+               home_score, away_score, home_label, away_label,
+               rsvp_deadline, poll_closes_at
         FROM matches WHERE id = ${params.matchId} AND group_id = ${params.id}
       `,
       sql`
@@ -112,6 +116,12 @@ export async function GET(
     phase: matchPhase(match as { status: string; scheduled_at: string | null; ratings_processed_at: string | null }),
     // Kadrolar yalnizca takim ici maclarda anlamli.
     squads: match.match_kind === "ic" ? squads : null,
+    // Anket suresi doldu ama hic oy olmadigi icin kapanamadi.
+    pollExpired: isPollExpired(
+      match as { status: string; poll_closes_at: string | null }
+    ),
+    // Yoklamanin fiilen kapandigi an: ayri bir son tarih yoksa mac saati.
+    rsvpClosesAt: (match.rsvp_deadline as string | null) ?? (match.scheduled_at as string | null),
     rating: {
       // Puanlama yalnizca maca katilanlara ve mac oynandiktan sonra acik.
       open: played && !match.ratings_processed_at && iAmAttending,
