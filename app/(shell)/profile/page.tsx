@@ -7,17 +7,21 @@ import { Card, Eyebrow, PageHeader } from "@/components/ui";
 import { api } from "@/lib/client-api";
 import { useActiveGroup } from "@/lib/active-group";
 
-type Me = { user: { id: string; name: string; email: string } | null };
+type Me = { user: { id: string; name: string; email: string } | null; isAdmin?: boolean };
 
 export default function ProfilePage() {
   const router = useRouter();
   const { groups, activeGroup } = useActiveGroup();
   const [user, setUser] = useState<Me["user"]>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     api
       .get<Me>("/api/auth/me")
-      .then((d) => setUser(d.user))
+      .then((d) => {
+        setUser(d.user);
+        setIsAdmin(Boolean(d.isAdmin));
+      })
       .catch(() => setUser(null));
   }, []);
 
@@ -49,6 +53,14 @@ export default function ProfilePage() {
           </div>
         </div>
       </Card>
+
+      {isAdmin && (
+        <Card style={{ padding: 0 }}>
+          <Link href="/admin" className="switcher-row">
+            Yönetim paneli
+          </Link>
+        </Card>
+      )}
 
       <Card style={{ padding: 0 }}>
         <Link href="/geri-bildirim" className="switcher-row">
