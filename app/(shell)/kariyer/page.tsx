@@ -19,6 +19,7 @@ type TimelineEntry = {
   penaltyDelta: number;
   matchAverage: number | null;
 };
+type SkillJourney = { skill: string; start: number; current: number; delta: number };
 type GroupJourney = {
   groupId: string;
   groupName: string;
@@ -30,6 +31,7 @@ type GroupJourney = {
   draws: number;
   losses: number;
   points: RatingPoint[];
+  skills: SkillJourney[];
 };
 type Companion = { key: string; name: string; isGuest: boolean; count: number };
 type Career = {
@@ -164,6 +166,46 @@ export default function CareerPage() {
               </div>
 
               {g.points.length > 1 && <Sparkline points={g.points} />}
+
+              {g.skills.length > 0 && (
+                <div style={{ marginTop: 18, overflowX: "auto" }}>
+                  <Eyebrow>YETENEK KIRILIMI</Eyebrow>
+                  <table style={{ marginTop: 8 }}>
+                    <thead>
+                      <tr>
+                        <th>Yetenek</th>
+                        <th>Başlangıç</th>
+                        <th>Şimdi</th>
+                        <th>Fark</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {g.skills.map((sk) => (
+                        <tr key={sk.skill}>
+                          <td>{skillLabel(sk.skill)}</td>
+                          <td className="muted">{sk.start}</td>
+                          <td>
+                            <strong>{sk.current}</strong>
+                          </td>
+                          <td
+                            style={{
+                              color:
+                                sk.delta > 0
+                                  ? "var(--pitch)"
+                                  : sk.delta < 0
+                                  ? "var(--brick)"
+                                  : "var(--ink-300)",
+                              fontWeight: sk.delta !== 0 ? 600 : 400,
+                            }}
+                          >
+                            {sk.delta === 0 ? "—" : signed(sk.delta)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </Card>
           ))}
 

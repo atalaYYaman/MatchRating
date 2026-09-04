@@ -33,6 +33,14 @@ export type TimelineEntry = {
   matchAverage: number | null;
 };
 
+/** Tek bir yetenegin sezon boyu degisimi. */
+export type SkillJourney = {
+  skill: string;
+  start: number;
+  current: number;
+  delta: number;
+};
+
 export type GroupJourney = {
   groupId: string;
   groupName: string;
@@ -44,6 +52,8 @@ export type GroupJourney = {
   draws: number;
   losses: number;
   points: RatingPoint[];
+  /** 6 yetenegin her biri icin baslangic -> simdi. */
+  skills: SkillJourney[];
 };
 
 export type Companion = {
@@ -279,9 +289,17 @@ export async function computeCareer(
   const journeys = new Map<string, GroupJourney>();
   const runningSkills = new Map<string, Record<string, number>>();
 
+  // Baslangic yetenekleri (gosterim icin kirpilmis halde) sonradan
+  // simdiki degerle karsilastirmak uzere saklanir.
+  const startSkillsByGroup = new Map<string, Record<string, number>>();
+
   for (const gid of groupIds) {
     const base = baseSkills(gid);
     runningSkills.set(gid, { ...base });
+    startSkillsByGroup.set(
+      gid,
+      Object.fromEntries(SKILL_KEYS.map((k) => [k, round1(clamp(base[k]))]))
+    );
     const startOverall = overallOf(base);
     journeys.set(gid, {
       groupId: gid,
@@ -294,6 +312,7 @@ export async function computeCareer(
       draws: 0,
       losses: 0,
       points: [],
+      skills: [],
     });
   }
 
@@ -334,6 +353,15 @@ export async function computeCareer(
 
   for (const journey of journeys.values()) {
     journey.netDelta = round1(journey.currentOverall - journey.startOverall);
+
+    const start = startSkillsByGroup.get(journey.groupId) ?? {};
+    const now = runningSkills.get(journey.groupId) ?? {};
+    journey.skills = SKILL_KEYS.map((skill) => {
+      const s0 = start[skill] ?? 0;
+      const s1 = round1(clamp(now[skill] ?? 0));
+      return { skill, start: s0, current: s1, delta: round1(s1 - s0) };
+    });
+
     // Baslangic noktasi grafigin ilk durumu olarak basa eklenir.
     journey.points.unshift({
       matchId: null,

@@ -19,6 +19,7 @@ type TimelineEntry = {
   penaltyDelta: number;
   matchAverage: number | null;
 };
+type SkillJourney = { skill: string; start: number; current: number; delta: number };
 type GroupJourney = {
   groupId: string;
   groupName: string;
@@ -30,6 +31,7 @@ type GroupJourney = {
   draws: number;
   losses: number;
   points: RatingPoint[];
+  skills: SkillJourney[];
 };
 type Companion = { key: string; name: string; isGuest: boolean; count: number };
 type Career = {
@@ -169,6 +171,22 @@ export default function CareerScreen() {
               </View>
 
               {g.points.length > 1 && <Sparkline points={g.points} />}
+
+              {g.skills.length > 0 && (
+                <View style={{ marginTop: space[4] }}>
+                  <Text
+                    style={[
+                      type.labelS,
+                      { color: colors.textTertiary, textTransform: "uppercase" },
+                    ]}
+                  >
+                    Yetenek kırılımı
+                  </Text>
+                  {g.skills.map((sk) => (
+                    <SkillRow key={sk.skill} sk={sk} />
+                  ))}
+                </View>
+              )}
             </Card>
           ))}
 
@@ -291,6 +309,33 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+function SkillRow({ sk }: { sk: SkillJourney }) {
+  const tint =
+    sk.delta > 0 ? colors.pitch : sk.delta < 0 ? colors.brick : colors.textTertiary;
+  return (
+    <View style={s.skillRow}>
+      <Text style={[type.bodyM, { color: colors.ink, flex: 1 }]}>
+        {skillLabel(sk.skill)}
+      </Text>
+      <Text style={[type.bodyS, { color: colors.textTertiary, width: 34, textAlign: "right" }]}>
+        {sk.start}
+      </Text>
+      <Text style={[type.bodyS, { color: colors.textTertiary }]}>→</Text>
+      <Text
+        style={[
+          type.bodyMMedium,
+          { color: colors.ink, width: 40, textAlign: "right" },
+        ]}
+      >
+        {sk.current}
+      </Text>
+      <Text style={[type.bodySMedium, { color: tint, width: 46, textAlign: "right" }]}>
+        {sk.delta === 0 ? "—" : signed(sk.delta)}
+      </Text>
+    </View>
+  );
+}
+
 function CompanionRow({ c, suffix }: { c: Companion; suffix: string }) {
   return (
     <View style={s.timelineRow}>
@@ -361,6 +406,14 @@ const s = {
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "center" as const,
+  },
+  skillRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: space[2],
+    paddingVertical: 7,
+    borderTopWidth: border.width,
+    borderTopColor: colors.borderDefault,
   },
   timelineRow: {
     flexDirection: "row" as const,
