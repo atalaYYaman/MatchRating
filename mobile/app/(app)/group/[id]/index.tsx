@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   RefreshControl,
   ScrollView,
   Text,
@@ -10,8 +11,8 @@ import {
 } from "react-native";
 import { Button, Card, ErrorText, Field, Screen } from "../../../../components/ui";
 import { api, ApiError } from "../../../../lib/api";
-import { positionLabel } from "../../../../lib/constants";
-import { colors, space, type } from "../../../../lib/theme";
+import { positionLabel, SKILLS } from "../../../../lib/constants";
+import { border, colors, space, type } from "../../../../lib/theme";
 
 type Group = { id: string; name: string; invite_code: string; owner_id: string };
 type MatchRecord = { played: number; wins: number; draws: number; losses: number };
@@ -27,6 +28,7 @@ type Rating = {
   userId: string;
   name: string;
   overall: number;
+  skills: Record<string, number>;
   voteCount: number;
   hasVotes: boolean;
   primaryPosition: string | null;
@@ -47,6 +49,8 @@ export default function GroupScreen() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNickname, setEditNickname] = useState("");
   const [savingMember, setSavingMember] = useState(false);
+  // Ayni anda tek oyuncunun yetenekleri acik kalir.
+  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -299,6 +303,57 @@ export default function GroupScreen() {
                     <Text style={{ color: colors.textTertiary, marginTop: 2, fontSize: 13 }}>
                       {m.record.wins}G {m.record.draws}B {m.record.losses}M
                     </Text>
+                  )}
+
+                  {/* Alti yetenegin dokumu: satiri kalabaltmasin diye
+                      dokununca acilir (webdeki oyuncu kartiyla ayni desen). */}
+                  {r?.hasVotes && (
+                    <Pressable
+                      onPress={() =>
+                        setExpandedPlayer(expandedPlayer === m.id ? null : m.id)
+                      }
+                      style={{
+                        minHeight: 44,
+                        justifyContent: "center",
+                        marginTop: space[2],
+                      }}
+                    >
+                      <Text style={[type.bodySMedium, { color: colors.textLink }]}>
+                        {expandedPlayer === m.id
+                          ? "Yetenekleri gizle"
+                          : "Yetenekleri göster"}
+                      </Text>
+                    </Pressable>
+                  )}
+
+                  {expandedPlayer === m.id && r && (
+                    <View
+                      style={{
+                        marginTop: space[2],
+                        paddingTop: space[3],
+                        borderTopWidth: border.width,
+                        borderTopColor: colors.borderDefault,
+                        gap: space[2],
+                      }}
+                    >
+                      {SKILLS.map((sk) => (
+                        <View
+                          key={sk.key}
+                          style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "baseline",
+                          }}
+                        >
+                          <Text style={[type.bodyS, { color: colors.textSecondary }]}>
+                            {sk.label}
+                          </Text>
+                          <Text style={[type.bodyMMedium, { color: colors.textPrimary }]}>
+                            {r.skills?.[sk.key] ?? "—"}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   )}
 
                   {isOwner && (

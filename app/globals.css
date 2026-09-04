@@ -1333,3 +1333,127 @@ a:has(> button) {
   background: var(--ink);
   color: var(--chalk);
 }
+
+/* ---- Oyuncu karti (10 sutunlu tablonun yerine) ----
+   Satir ozet, dokununca detay: mobilde yatay kaydirma gerektirmeden ayni
+   bilgiyi tasir. */
+.player-card {
+  width: 100%;
+  text-align: left;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-2);
+  min-height: 44px;
+  display: block;
+  color: inherit;
+  font-weight: 400;
+}
+
+.player-card:hover:not(:disabled) { filter: none; border-color: var(--border-strong); }
+.player-card:active { transform: none; }
+.player-card[aria-expanded="true"] { border-color: var(--border-strong); }
+
+.player-card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.player-card-name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--text-body);
+  color: var(--text-primary);
+}
+
+.player-card-meta {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.player-card-overall {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-heading);
+  color: var(--pitch-900);
+  font-variant-numeric: tabular-nums;
+}
+
+.player-card-caret {
+  color: var(--ink-300);
+  flex: none;
+  transition: transform 140ms ease;
+}
+.player-card[aria-expanded="true"] .player-card-caret { transform: rotate(180deg); }
+
+/* Acilan yetenekler: iki sutun, mobilde de rahat okunur. */
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-default);
+}
+
+.skill-grid-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.skill-grid-row span:first-child {
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.skill-grid-row span:last-child {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-body);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-card-caret { transition: none; }
+}
+
+/* ---- Sayfa ici bolum basligi ----
+   Ayni agirlikta bes kart yerine, iliskili kartlari tek bir baslik altinda
+   toplar. Kart icindeki Eyebrow'dan ayrilsin diye biraz daha belirgin. */
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: var(--space-6) 0 var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.section-head h2 {
+  margin: 0;
+  font-size: var(--text-body);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Bolum icindeki kartlar birbirine ait okunsun diye daha sik. */
+.section-body > .card { margin-bottom: var(--space-2); }
+.section-body > .card:last-child { margin-bottom: 0; }
+
+/* Iki kadro alt alta, aralarinda nefes payi. */
+.squad-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}

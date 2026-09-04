@@ -123,6 +123,9 @@ export default function MatchDetailPage() {
   const m = data.match;
   const isPoll = m.status === "poll_open";
   const attendees = data.attendance.filter((a) => a.status === "yes");
+  // Bittikten sonraki ozet bolumu: kadro ve/veya mac puanlari varsa acilir.
+  const showSquadSummary = data.phase === "completed" && data.squads !== null;
+  const hasSummary = showSquadSummary || data.rating.results.length > 0;
   const rsvpOpen =
     m.status === "scheduled" &&
     !!m.scheduled_at &&
@@ -400,6 +403,99 @@ export default function MatchDetailPage() {
         </Link>
       )}
 
+      {/* Kadrolar: yalnizca takim ici maclarda, mac bitmeden once */}
+      {m.match_kind === "ic" && !["poll", "completed", "cancelled"].includes(data.phase) && (
+        <Card>
+          <div className="row" style={{ justifyContent: "space-between" }}>
+            <Eyebrow>KADROLAR</Eyebrow>
+            {data.squads && (
+              <span className="muted">
+                {data.squads.home.length}-{data.squads.away.length}
+                {data.squads.locked ? " · kilitli" : ""}
+              </span>
+            )}
+          </div>
+          <p className="muted" style={{ margin: "8px 0 12px" }}>
+            {data.squads
+              ? "Kadrolar oluşturuldu."
+              : "Yoklamaya katılanlar iki takıma bölünmedi."}
+          </p>
+          <Link href={`/group/${groupId}/match/${matchId}/squads`}>
+            <button className="secondary full">Kadroları yönet</button>
+          </Link>
+        </Card>
+      )}
+
+      {/* MAC OZETI — bittikten sonra kadro ve mac puanlari ayri ayri kart
+          olmak yerine tek bir baslik altinda toplanir; bes esit agirlikli
+          kutu yerine acik bir hiyerarsi. */}
+      {hasSummary && (
+        <>
+          <div className="section-head">
+            <h2>Maç özeti</h2>
+          </div>
+          <div className="section-body">
+            {showSquadSummary && (
+              <Card>
+                <Eyebrow>KADROLAR</Eyebrow>
+                <div className="squad-summary">
+                  {([
+                    ["Takım 1", data.squads!.home, m.home_score, m.away_score],
+                    ["Takım 2", data.squads!.away, m.away_score, m.home_score],
+                  ] as const).map(([title, players, mine, theirs]) => (
+                    <div key={title}>
+                      <div className="row" style={{ justifyContent: "space-between" }}>
+                        <strong>{title}</strong>
+                        {mine != null && theirs != null && (
+                          <Badge tone={mine > theirs ? "brand" : mine < theirs ? "danger" : "neutral"}>
+                            {mine > theirs ? "Kazandı" : mine < theirs ? "Kaybetti" : "Berabere"}
+                          </Badge>
+                        )}
+                      </div>
+                      <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                        {players.map((pl) => (
+                          <li key={pl.id}>
+                            {pl.name}
+                            {pl.isGuest ? " (misafir)" : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {data.rating.results.length > 0 && (
+              <Card>
+                <Eyebrow>MAÇ PUANLARI</Eyebrow>
+                <p className="muted" style={{ margin: "6px 0 4px", fontSize: "var(--text-caption)" }}>
+                  Oyuncuların bu maçta arkadaşlarından aldığı ortalama puan (10 üzerinden).
+                </p>
+                <div className="roster">
+                  {data.rating.results.map((r) => (
+                    <div key={r.userId} className="roster-row">
+                      <span className="grow">
+                        <span className="roster-name">{r.name}</span>
+                        <div className="roster-meta">{r.raterCount} oy</div>
+                      </span>
+                      <span className="roster-score">{r.average.toFixed(1)}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* YONETIM — yalnizca yoneticinin gordugu islemler tek baslik altinda */}
+      {data.isOwner && (data.rating.played || m.status === "scheduled" || m.status === "poll_open") && (
+        <div className="section-head">
+          <h2>Yönetim</h2>
+        </div>
+      )}
+
       {/* Skor girisi */}
       {data.rating.played && data.isOwner && (
         <Card>
@@ -438,91 +534,6 @@ export default function MatchDetailPage() {
           >
             Skoru kaydet
           </button>
-        </Card>
-      )}
-
-      {/* Maç puanlama sonucu: oyuncularin aldigi ortalama puan */}
-      {data.rating.results.length > 0 && (
-        <Card>
-          <Eyebrow>MAÇ PUANLARI</Eyebrow>
-          <p className="muted" style={{ margin: "6px 0 4px", fontSize: "var(--text-caption)" }}>
-            Oyuncuların bu maçta arkadaşlarından aldığı ortalama puan (10 üzerinden).
-          </p>
-          <div className="roster">
-            {data.rating.results.map((r) => (
-              <div key={r.userId} className="roster-row">
-                <span className="grow">
-                  <span className="roster-name">{r.name}</span>
-                  <div className="roster-meta">{r.raterCount} oy</div>
-                </span>
-                <span className="roster-score">{r.average.toFixed(1)}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {/* Kadrolar: yalnizca takim ici maclarda */}
-      {m.match_kind === "ic" && !["poll", "completed", "cancelled"].includes(data.phase) && (
-        <Card>
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <Eyebrow>KADROLAR</Eyebrow>
-            {data.squads && (
-              <span className="muted">
-                {data.squads.home.length}-{data.squads.away.length}
-                {data.squads.locked ? " · kilitli" : ""}
-              </span>
-            )}
-          </div>
-          <p className="muted" style={{ margin: "8px 0 12px" }}>
-            {data.squads
-              ? "Kadrolar oluşturuldu."
-              : "Yoklamaya katılanlar iki takıma bölünmedi."}
-          </p>
-          <Link href={`/group/${groupId}/match/${matchId}/squads`}>
-            <button className="secondary full">Kadroları yönet</button>
-          </Link>
-        </Card>
-      )}
-
-      {/* Tamamlanmis mac ozeti: skor + kadrolar */}
-      {data.phase === "completed" && data.squads && (
-        <Card>
-          <Eyebrow>KADROLAR</Eyebrow>
-          <div style={{ marginTop: 8 }}>
-            <strong>
-              Takım 1{" "}
-              {m.home_score != null && m.away_score != null && (
-                <span className="muted">
-                  {m.home_score > m.away_score ? "(kazandı)" : m.home_score < m.away_score ? "(kaybetti)" : "(berabere)"}
-                </span>
-              )}
-            </strong>
-            <ul style={{ margin: "4px 0 12px", paddingLeft: 18 }}>
-              {data.squads.home.map((p) => (
-                <li key={p.id}>
-                  {p.name}
-                  {p.isGuest ? " (misafir)" : ""}
-                </li>
-              ))}
-            </ul>
-            <strong>
-              Takım 2{" "}
-              {m.home_score != null && m.away_score != null && (
-                <span className="muted">
-                  {m.away_score > m.home_score ? "(kazandı)" : m.away_score < m.home_score ? "(kaybetti)" : "(berabere)"}
-                </span>
-              )}
-            </strong>
-            <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
-              {data.squads.away.map((p) => (
-                <li key={p.id}>
-                  {p.name}
-                  {p.isGuest ? " (misafir)" : ""}
-                </li>
-              ))}
-            </ul>
-          </div>
         </Card>
       )}
 

@@ -60,6 +60,8 @@ export default function CareerPage() {
   const [career, setCareer] = useState<Career | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Yetenek kirilimi varsayilan kapali; sayfa 2,7 ekrandan kisaliyor.
+  const [openSkills, setOpenSkills] = useState<string | null>(null);
   // Kapsam degisince eski istegin gec gelen cevabi yeniyi ezmesin.
   const scopeRef = useRef<string | null>(scopeId);
 
@@ -168,42 +170,67 @@ export default function CareerPage() {
               {g.points.length > 1 && <Sparkline points={g.points} />}
 
               {g.skills.length > 0 && (
-                <div style={{ marginTop: 18, overflowX: "auto" }}>
-                  <Eyebrow>YETENEK KIRILIMI</Eyebrow>
-                  <table style={{ marginTop: 8 }}>
-                    <thead>
-                      <tr>
-                        <th>Yetenek</th>
-                        <th>Başlangıç</th>
-                        <th>Şimdi</th>
-                        <th>Fark</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {g.skills.map((sk) => (
-                        <tr key={sk.skill}>
-                          <td>{skillLabel(sk.skill)}</td>
-                          <td className="muted">{sk.start}</td>
-                          <td>
-                            <strong>{sk.current}</strong>
-                          </td>
-                          <td
-                            style={{
-                              color:
-                                sk.delta > 0
-                                  ? "var(--pitch)"
-                                  : sk.delta < 0
-                                  ? "var(--brick)"
-                                  : "var(--ink-300)",
-                              fontWeight: sk.delta !== 0 ? 600 : 400,
-                            }}
-                          >
-                            {sk.delta === 0 ? "—" : signed(sk.delta)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div style={{ marginTop: 14 }}>
+                  <button
+                    type="button"
+                    className="player-card"
+                    aria-expanded={openSkills === g.groupId}
+                    style={{ marginBottom: 0 }}
+                    onClick={() =>
+                      setOpenSkills(openSkills === g.groupId ? null : g.groupId)
+                    }
+                  >
+                    <div className="player-card-head">
+                      <span className="grow">
+                        <span className="player-card-name">Yetenek kırılımı</span>
+                        <div className="player-card-meta">
+                          Altı yeteneğin ayrı ayrı nasıl değiştiği
+                        </div>
+                      </span>
+                      <svg
+                        className="player-card-caret"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </div>
+
+                    {openSkills === g.groupId && (
+                      <div className="skill-grid" style={{ gridTemplateColumns: "1fr" }}>
+                        {g.skills.map((sk) => (
+                          <div key={sk.skill} className="skill-grid-row">
+                            <span>{skillLabel(sk.skill)}</span>
+                            <span>
+                              <span className="muted" style={{ fontWeight: 400 }}>
+                                {sk.start} →{" "}
+                              </span>
+                              {sk.current}
+                              <span
+                                style={{
+                                  marginLeft: 8,
+                                  color:
+                                    sk.delta > 0
+                                      ? "var(--pitch)"
+                                      : sk.delta < 0
+                                      ? "var(--brick)"
+                                      : "var(--ink-300)",
+                                }}
+                              >
+                                {sk.delta === 0 ? "—" : signed(sk.delta)}
+                              </span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </button>
                 </div>
               )}
             </Card>

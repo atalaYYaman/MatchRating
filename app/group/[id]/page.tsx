@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { SKILLS } from "@/lib/skills";
-import { positionLabel, PositionKey } from "@/lib/positions";
+import { formatPositions, PositionKey } from "@/lib/positions";
 
 type Member = {
   id: string;
@@ -52,6 +52,8 @@ export default function GroupPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNickname, setEditNickname] = useState("");
   const [savingMember, setSavingMember] = useState(false);
+  // Ayni anda tek oyuncunun yetenekleri acik kalir.
+  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -311,50 +313,66 @@ export default function GroupPage() {
           {refreshing ? "Yenileniyor..." : "Yenile"}
         </button>
       </div>
-      <p style={{ color: "#888", fontSize: "var(--text-caption)", margin: "4px 0 8px" }}>
-        İsim yanındaki oran, oyuncuyu oylayan üye / oylayabilecek üye sayısıdır
-        ({possibleVoters} kişi oylayabilir).
+      <p className="muted" style={{ margin: "4px 0 10px", fontSize: "var(--text-caption)" }}>
+        Bir oyuncuya dokunarak altı yeteneğinin dökümünü aç. Oran, o oyuncuyu
+        oylayan üye sayısıdır ({possibleVoters} kişi oylayabilir).
       </p>
-      <div className="card" style={{ overflowX: "auto" }}>
-        <table>
-          <thead>
-            <tr>
-              <th>İsim</th>
-              <th>1. Mevki</th>
-              <th>2. Mevki</th>
-              {SKILLS.map((s) => <th key={s.key}>{s.label}</th>)}
-              <th>Genel</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ratings.map((r) => {
-              const voteRatio = `${r.voteCount}/${possibleVoters}`;
-              return (
-                <tr key={r.userId}>
-                  <td>
-                    {r.name}
-                    {!r.hasVotes && (
-                      <span className="pill" style={{ marginLeft: 6 }}>oy yok ({voteRatio})</span>
-                    )}
-                    {r.hasVotes && !r.hasEnoughVotes && (
-                      <span className="pill" style={{ marginLeft: 6 }}>
-                        Yetersiz oy ({voteRatio})
-                      </span>
-                    )}
-                    {r.hasEnoughVotes && (
-                      <span className="pill" style={{ marginLeft: 6 }}>{voteRatio} oy</span>
-                    )}
-                  </td>
-                  <td>{positionLabel(r.primaryPosition)}</td>
-                  <td>{positionLabel(r.secondaryPosition)}</td>
-                  {SKILLS.map((s) => <td key={s.key}>{r.skills[s.key]}</td>)}
-                  <td><strong>{r.overall}</strong></td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* Oyuncu basina acilir kart: 10 sutunlu tablo mobilde 621px genislige
+          cikip yatay kaydirma gerektiriyordu. Ozet satirda, yetenekler
+          dokununca acilir. */}
+      {ratings.map((r) => {
+        const voteRatio = `${r.voteCount}/${possibleVoters}`;
+        const open = expandedPlayer === r.userId;
+        return (
+          <button
+            key={r.userId}
+            type="button"
+            className="player-card"
+            aria-expanded={open}
+            onClick={() => setExpandedPlayer(open ? null : r.userId)}
+          >
+            <div className="player-card-head">
+              <div className="grow">
+                <span className="player-card-name">{r.name}</span>
+                {!r.hasVotes && (
+                  <span className="pill" style={{ marginLeft: 6 }}>oy yok</span>
+                )}
+                {r.hasVotes && !r.hasEnoughVotes && (
+                  <span className="pill" style={{ marginLeft: 6 }}>yetersiz oy</span>
+                )}
+                <div className="player-card-meta">
+                  {formatPositions(r.primaryPosition, r.secondaryPosition)} · {voteRatio} oy
+                </div>
+              </div>
+              <span className="player-card-overall">{r.overall}</span>
+              <svg
+                className="player-card-caret"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </div>
+
+            {open && (
+              <div className="skill-grid">
+                {SKILLS.map((sk) => (
+                  <div key={sk.key} className="skill-grid-row">
+                    <span>{sk.label}</span>
+                    <span>{r.skills[sk.key]}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </button>
+        );
+      })}
 
       {/* Geri alinamaz islemler en altta, ayri bir blokta */}
       <div className="card" style={{ marginTop: "var(--space-6)" }}>

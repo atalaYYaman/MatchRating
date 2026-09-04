@@ -142,6 +142,9 @@ export default function MatchDetailScreen() {
   // Anketi kesinlestirme / skor girme yetkisi. Sunucu da ayrica dogruluyor;
   // bu yalnizca arayuz gorunurlugu.
   const canManage = data.isOwner;
+  // Bittikten sonraki ozet bolumu: kadro ve/veya mac puanlari varsa acilir.
+  const showSquadSummary = data.phase === "completed" && data.squads !== null;
+  const hasSummary = showSquadSummary || data.rating.results.length > 0;
 
   return (
     <ScrollView
@@ -437,38 +440,112 @@ export default function MatchDetailScreen() {
         />
       )}
 
-      {/* Mac puanlama sonucu: oyuncularin aldigi ortalama puan */}
-      {data.rating.results.length > 0 && (
+      {/* Kadrolar: yalnizca takim ici maclarda, mac bitmeden once */}
+      {m.match_kind === "ic" && !["poll", "completed", "cancelled"].includes(data.phase) && (
         <Card>
-          <Label>Maç puanları</Label>
-          <Text style={[type.bodyS, { color: colors.textSecondary, marginBottom: space[2] }]}>
-            Oyuncuların bu maçta arkadaşlarından aldığı ortalama puan (10 üzerinden).
-          </Text>
-          {data.rating.results.map((r) => (
-            <View
-              key={r.userId}
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingVertical: 8,
-                borderTopWidth: 1,
-                borderTopColor: colors.borderDefault,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.textPrimary, fontWeight: "500" }}>{r.name}</Text>
-                <Text style={{ color: colors.textTertiary, fontSize: 13 }}>
-                  {r.raterCount} oy
-                </Text>
-              </View>
-              <Text style={[type.scoreS, { color: colors.pitch900 }]}>
-                {r.average.toFixed(1)}
+          <View style={s.head}>
+            <Label>Kadrolar</Label>
+            {data.squads && (
+              <Text style={[type.bodyS, { color: colors.textSecondary }]}>
+                {data.squads.home.length}-{data.squads.away.length}
+                {data.squads.locked ? " · kilitli" : ""}
               </Text>
-            </View>
-          ))}
+            )}
+          </View>
+          <Text style={[type.bodyS, { color: colors.textSecondary, marginBottom: space[3] }]}>
+            {data.squads
+              ? "Kadrolar oluşturuldu."
+              : "Yoklamaya katılanlar iki takıma bölünmedi."}
+          </Text>
+          <Button
+            title="Kadroları yönet"
+            variant="secondary"
+            onPress={() => router.push(`/group/${id}/match/${matchId}/squads`)}
+          />
         </Card>
       )}
+
+      {/* MAC OZETI — bittikten sonra kadro ve mac puanlari ayri ayri kart
+          olmak yerine tek bir baslik altinda toplanir. */}
+      {hasSummary && (
+        <>
+          <SectionHead title="Maç özeti" />
+
+          {showSquadSummary && (
+            <Card>
+              <Label>Kadrolar</Label>
+              {(
+                [
+                  ["Takım 1", data.squads!.home, m.home_score, m.away_score],
+                  ["Takım 2", data.squads!.away, m.away_score, m.home_score],
+                ] as const
+              ).map(([title, players, mine, theirs]) => (
+                <View key={title} style={{ marginTop: space[3] }}>
+                  <View style={s.head}>
+                    <Text style={[type.bodyMMedium, { color: colors.ink }]}>{title}</Text>
+                    {mine != null && theirs != null && (
+                      <Badge
+                        tone={mine > theirs ? "brand" : mine < theirs ? "danger" : "neutral"}
+                      >
+                        {mine > theirs ? "Kazandı" : mine < theirs ? "Kaybetti" : "Berabere"}
+                      </Badge>
+                    )}
+                  </View>
+                  {players.map((pl) => (
+                    <Text
+                      key={pl.id}
+                      style={[type.bodyS, { color: colors.textSecondary, marginTop: 2 }]}
+                    >
+                      {pl.name}
+                      {pl.isGuest ? " (misafir)" : ""}
+                    </Text>
+                  ))}
+                </View>
+              ))}
+            </Card>
+          )}
+
+          {data.rating.results.length > 0 && (
+            <Card>
+              <Label>Maç puanları</Label>
+              <Text
+                style={[type.bodyS, { color: colors.textSecondary, marginBottom: space[2] }]}
+              >
+                Oyuncuların bu maçta arkadaşlarından aldığı ortalama puan (10 üzerinden).
+              </Text>
+              {data.rating.results.map((r) => (
+                <View
+                  key={r.userId}
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    paddingVertical: 8,
+                    borderTopWidth: 1,
+                    borderTopColor: colors.borderDefault,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.textPrimary, fontWeight: "500" }}>{r.name}</Text>
+                    <Text style={{ color: colors.textTertiary, fontSize: 13 }}>
+                      {r.raterCount} oy
+                    </Text>
+                  </View>
+                  <Text style={[type.scoreS, { color: colors.pitch900 }]}>
+                    {r.average.toFixed(1)}
+                  </Text>
+                </View>
+              ))}
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* YONETIM — yoneticiye ozel islemler tek baslik altinda */}
+      {canManage &&
+        (data.rating.played || m.status === "scheduled" || m.status === "poll_open") && (
+          <SectionHead title="Yönetim" />
+        )}
 
       {/* Skor (yonetici, mac oynandiktan sonra) */}
       {data.rating.played && canManage && (
@@ -513,80 +590,6 @@ export default function MatchDetailScreen() {
         </Card>
       )}
 
-      {/* Kadrolar: yalnizca takim ici maclarda */}
-      {m.match_kind === "ic" && !["poll", "completed", "cancelled"].includes(data.phase) && (
-        <Card>
-          <View style={s.head}>
-            <Label>Kadrolar</Label>
-            {data.squads && (
-              <Text style={[type.bodyS, { color: colors.textSecondary }]}>
-                {data.squads.home.length}-{data.squads.away.length}
-                {data.squads.locked ? " · kilitli" : ""}
-              </Text>
-            )}
-          </View>
-          <Text style={[type.bodyS, { color: colors.textSecondary, marginBottom: space[3] }]}>
-            {data.squads
-              ? "Kadrolar oluşturuldu."
-              : "Yoklamaya katılanlar iki takıma bölünmedi."}
-          </Text>
-          <Button
-            title="Kadroları yönet"
-            variant="secondary"
-            onPress={() => router.push(`/group/${id}/match/${matchId}/squads`)}
-          />
-        </Card>
-      )}
-
-      {/* Tamamlanmis mac ozeti: skor + kadrolar */}
-      {data.phase === "completed" && data.squads && (
-        <Card>
-          <Label>Kadrolar</Label>
-          <Text style={[type.bodyMMedium, { color: colors.ink, marginTop: space[2] }]}>
-            Takım 1{" "}
-            {m.home_score != null && m.away_score != null && (
-              <Text style={{ color: colors.textSecondary, fontWeight: "400" }}>
-                (
-                {m.home_score > m.away_score
-                  ? "kazandı"
-                  : m.home_score < m.away_score
-                  ? "kaybetti"
-                  : "berabere"}
-                )
-              </Text>
-            )}
-          </Text>
-          {data.squads.home.map((p) => (
-            <Text key={p.id} style={[type.bodyS, { color: colors.textSecondary }]}>
-              {p.name}
-              {p.isGuest ? " (misafir)" : ""}
-            </Text>
-          ))}
-          <Text
-            style={[type.bodyMMedium, { color: colors.ink, marginTop: space[3] }]}
-          >
-            Takım 2{" "}
-            {m.home_score != null && m.away_score != null && (
-              <Text style={{ color: colors.textSecondary, fontWeight: "400" }}>
-                (
-                {m.away_score > m.home_score
-                  ? "kazandı"
-                  : m.away_score < m.home_score
-                  ? "kaybetti"
-                  : "berabere"}
-                )
-              </Text>
-            )}
-          </Text>
-          {data.squads.away.map((p) => (
-            <Text key={p.id} style={[type.bodyS, { color: colors.textSecondary }]}>
-              {p.name}
-              {p.isGuest ? " (misafir)" : ""}
-            </Text>
-          ))}
-        </Card>
-      )}
-
       {/* Maci yalnizca olusturan yonetici iptal edebilir */}
       {canManage && m.status !== "completed" && m.status !== "cancelled" && (
         <Card>
@@ -605,6 +608,31 @@ export default function MatchDetailScreen() {
         </Card>
       )}
     </ScrollView>
+  );
+}
+
+// Ayni agirlikta kartlari tek bir baslik altinda toplayan bolum basligi;
+// webdeki .section-head ile ayni gorsel dil.
+function SectionHead({ title }: { title: string }) {
+  return (
+    <View
+      style={{
+        marginTop: space[5],
+        marginBottom: space[1],
+        paddingBottom: space[2],
+        borderBottomWidth: border.width,
+        borderBottomColor: colors.borderDefault,
+      }}
+    >
+      <Text
+        style={[
+          type.labelS,
+          { textTransform: "uppercase", color: colors.textSecondary },
+        ]}
+      >
+        {title}
+      </Text>
+    </View>
   );
 }
 
