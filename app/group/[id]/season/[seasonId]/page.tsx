@@ -63,7 +63,7 @@ export default function SeasonSummaryPage() {
     return (
       <div>
         <p>
-          <Link href={`/group/${groupId}/seasons`}>← Sezonlar</Link>
+          <Link className="back-link" href={`/group/${groupId}/seasons`}>← Sezonlar</Link>
         </p>
         <ErrorText>{error}</ErrorText>
       </div>
@@ -77,7 +77,7 @@ export default function SeasonSummaryPage() {
   return (
     <div>
       <p>
-        <Link href={`/group/${groupId}/seasons`}>← Sezonlar</Link>
+        <Link className="back-link" href={`/group/${groupId}/seasons`}>← Sezonlar</Link>
       </p>
 
       <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>

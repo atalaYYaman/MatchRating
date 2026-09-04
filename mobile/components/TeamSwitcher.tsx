@@ -70,11 +70,21 @@ const s = {
     textTransform: "uppercase" as const,
     color: colors.ink300,
   },
+  // Uygulamanin tamaminin kapsamini belirleyen kontrol; dokunulabilir
+  // gorunmesi ve tam boy hedef olmasi gerekiyor (Apple HIG 44pt).
   switch: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: 6,
+    alignSelf: "flex-start" as const,
+    gap: space[2],
     marginTop: 3,
+    minHeight: 44,
+    paddingHorizontal: space[3],
+    paddingVertical: space[2],
+    borderWidth: border.width,
+    borderColor: colors.borderDefault,
+    borderRadius: radius.button,
+    backgroundColor: colors.surfaceCard,
   },
   sheet: {
     marginTop: space[2],

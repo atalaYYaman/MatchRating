@@ -122,6 +122,7 @@ input, select, textarea {
   color: var(--text-primary);
   background: var(--surface-card-raised);
   padding: 10px 14px;
+  min-height: 44px;
   border-radius: var(--radius-input);
   border: 1px solid var(--border-default);
   outline: none;
@@ -143,6 +144,9 @@ button {
   border-radius: var(--radius-button);
   cursor: pointer;
   padding: 12px 20px;
+  /* Dokunma hedefi minimumu: Apple HIG 44pt, Material 48dp, WCAG 2.5.5 44px.
+     Saha kenarinda tek elle kullanilan bir uygulama; kucuk hedef affetmiyor. */
+  min-height: 44px;
   transition: filter 120ms ease, transform 80ms ease;
 }
 
@@ -181,6 +185,8 @@ button.accent {
 button.small {
   font-size: 13px;
   padding: 8px 14px;
+  /* Yazisi kucuk ama dokunma alani tam boy. */
+  min-height: 44px;
 }
 
 .row {
@@ -606,6 +612,13 @@ input[type="range"]:focus {
   color: var(--pitch-900);
 }
 
+/* Senden bir sey bekleniyor. */
+.inline-msg-warning {
+  background: var(--amber-100);
+  border-color: var(--amber);
+  color: var(--amber-700);
+}
+
 .inline-msg-danger {
   background: var(--brick-100);
   border-color: var(--brick);
@@ -843,14 +856,18 @@ input[type="range"]:focus {
 .link-row:active { transform: none; }
 
 /* Takim secici */
+/* Uygulamanin tamaminin kapsamini belirleyen kontrol; dokunulabilir
+   gorunmesi ve tam boy hedef olmasi gerekiyor. */
 .team-switch {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
+  gap: 8px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  padding: 6px 12px;
+  margin: 2px 0 0;
+  min-height: 44px;
+  border-radius: var(--radius-button);
   cursor: pointer;
   color: var(--ink);
   font-family: var(--font-display);
@@ -859,8 +876,18 @@ input[type="range"]:focus {
   line-height: 1.2;
 }
 
-.team-switch:hover { filter: none; color: var(--pitch); }
+.team-switch:hover { filter: none; border-color: var(--border-strong); }
 .team-switch:active { transform: none; }
+
+/* Geri linkleri: yazi boyu kalsin, dokunma alani 44px olsun. */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+  margin-left: -10px;
+  border-radius: var(--radius-button);
+}
 
 .switcher-row {
   display: flex;
@@ -933,7 +960,10 @@ input[type="range"]:focus {
 }
 
 .chip {
-  padding: 8px 12px;
+  padding: 8px 14px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-default);
   background: var(--surface-card);
@@ -1237,4 +1267,17 @@ input[type="range"]:focus {
   height: 9px;
   border-radius: 999px;
   flex: none;
+}
+
+/* Amber tek bir sey icin ayrildi: senden bir sey bekleniyor. Kartin sol
+   kenarindaki serit, rozetle birlikte listede goz atarken yakalanmasini
+   saglar. */
+.card.needs-action {
+  border-left: 3px solid var(--amber);
+}
+
+/* Buton saran linkler blok olsun; satir ici <a> butonun etrafinda daralip
+   dokunma alanini yaniltici sekilde kuculuyor. */
+a:has(> button) {
+  display: block;
 }

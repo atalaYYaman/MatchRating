@@ -111,7 +111,7 @@ export default function RateMatchPage() {
   return (
     <div>
       <p>
-        <Link href={`/group/${groupId}/match/${matchId}`}>← Maç</Link>
+        <Link className="back-link" href={`/group/${groupId}/match/${matchId}`}>← Maç</Link>
       </p>
       <h1>Maçı Oyla</h1>
 

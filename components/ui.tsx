@@ -68,7 +68,8 @@ export function InlineMessage({
   tone = "neutral",
 }: {
   children: React.ReactNode;
-  tone?: "neutral" | "success" | "danger";
+  /** warning = senden bir sey bekleniyor (amber). */
+  tone?: "neutral" | "success" | "warning" | "danger";
 }) {
   return <div className={`inline-msg inline-msg-${tone}`}>{children}</div>;
 }

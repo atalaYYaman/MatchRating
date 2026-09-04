@@ -22,11 +22,22 @@ type MatchRow = {
   phase: MatchPhase;
   attending_count: number;
   poll_response_count: number;
+  /** Senden bekleneni anlatir; amber sinyalin kaynagi. */
+  myAction: "poll" | "rsvp" | "rating" | null;
 };
 
+const ACTION_LABEL: Record<"poll" | "rsvp" | "rating", string> = {
+  poll: "Anketi cevapla",
+  rsvp: "Katılım bildir",
+  rating: "Maçı puanla",
+};
+
+// Faz rozeti yalnizca macin durumunu anlatir: yesil = surüyor, gri = bitti,
+// kirmizi = iptal. Amber bilerek disarida birakildi; o renk artik tek bir sey
+// icin ayrildi: "senden bir sey bekleniyor" (bkz. needsMyAction).
 const PHASE_TONE: Record<MatchPhase, BadgeTone> = {
-  rating: "accent",
-  poll: "accent",
+  rating: "brand",
+  poll: "brand",
   scheduled: "brand",
   playing: "brand",
   completed: "neutral",
@@ -134,9 +145,14 @@ export default function MatchesPage() {
             href={`/group/${m.group_id}/match/${m.id}`}
             style={{ display: "block", color: "inherit" }}
           >
-            <Card>
+            <Card className={m.myAction ? "needs-action" : ""}>
               <div className="row" style={{ justifyContent: "space-between" }}>
-                <Badge tone={PHASE_TONE[m.phase]}>{PHASE_LABEL[m.phase]}</Badge>
+                <div className="row" style={{ gap: 6 }}>
+                  <Badge tone={PHASE_TONE[m.phase]}>{PHASE_LABEL[m.phase]}</Badge>
+                  {m.myAction && (
+                    <Badge tone="accent">{ACTION_LABEL[m.myAction]}</Badge>
+                  )}
+                </div>
                 <span className="muted">
                   {isAll ? `${m.group_name} · ` : ""}
                   {m.match_kind === "ic" ? "Takım içi" : "Dış rakip"}

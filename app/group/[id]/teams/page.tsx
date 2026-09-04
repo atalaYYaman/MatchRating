@@ -189,7 +189,7 @@ export default function TeamsPage() {
   return (
     <div>
       <p>
-        <Link href={`/group/${groupId}`}>← Takıma dön</Link>
+        <Link className="back-link" href={`/group/${groupId}`}>← Takıma dön</Link>
       </p>
       <h1>Takımları Oluştur</h1>
       <p className="muted" style={{ marginTop: 4 }}>

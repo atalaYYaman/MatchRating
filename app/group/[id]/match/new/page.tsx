@@ -118,7 +118,7 @@ export default function NewMatchPage() {
   return (
     <div>
       <p>
-        <Link href="/matches">← Maçlar</Link>
+        <Link className="back-link" href="/matches">← Maçlar</Link>
       </p>
       <h1>Yeni Maç</h1>
 

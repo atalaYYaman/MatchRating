@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Card, ErrorText, Eyebrow, Field } from "@/components/ui";
+import { Badge, Card, ErrorText, Eyebrow, Field, InlineMessage } from "@/components/ui";
 import { api, ApiError } from "@/lib/client-api";
 import { clockTime, countdownLabel, shortDate } from "@/lib/dateFormat";
 import { MatchPhase, PHASE_LABEL } from "@/lib/matchStatus";
@@ -111,7 +111,7 @@ export default function MatchDetailPage() {
     return (
       <div>
         <p>
-          <Link href="/matches">← Maçlar</Link>
+          <Link className="back-link" href="/matches">← Maçlar</Link>
         </p>
         <ErrorText>{error}</ErrorText>
         {!error && <p className="muted">Yükleniyor...</p>}
@@ -130,7 +130,7 @@ export default function MatchDetailPage() {
   return (
     <div>
       <p>
-        <Link href="/matches">← Maçlar</Link>
+        <Link className="back-link" href="/matches">← Maçlar</Link>
       </p>
 
       <ErrorText>{error}</ErrorText>
@@ -139,9 +139,7 @@ export default function MatchDetailPage() {
         <div className="row" style={{ justifyContent: "space-between" }}>
           <Badge
             tone={
-              data.phase === "rating" || data.phase === "poll"
-                ? "accent"
-                : data.phase === "cancelled"
+              data.phase === "cancelled"
                 ? "danger"
                 : data.phase === "completed"
                 ? "neutral"
@@ -341,6 +339,12 @@ export default function MatchDetailPage() {
             </strong>
           </div>
 
+          {rsvpOpen && data.myAttendance === null && (
+            <InlineMessage tone="warning">
+              Bu maç için katılım bildirmedin.
+            </InlineMessage>
+          )}
+
           {rsvpOpen && (
             <div className="row" style={{ marginTop: 12, marginBottom: 12 }}>
               <button
@@ -398,9 +402,10 @@ export default function MatchDetailPage() {
         </Card>
       )}
 
+      {/* Senden beklenen eylem: amber. */}
       {data.rating.open && (
         <Link href={`/group/${groupId}/match/${matchId}/rate`}>
-          <button className="full">Maçı oyla</button>
+          <button className="full accent">Maçı oyla</button>
         </Link>
       )}
 

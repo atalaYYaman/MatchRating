@@ -8,6 +8,7 @@ import {
   Card,
   ErrorText,
   Field,
+  InlineMessage,
   Label,
 } from "../../../../../../components/ui";
 import { api, ApiError } from "../../../../../../lib/api";
@@ -357,6 +358,13 @@ export default function MatchDetailScreen() {
             </Text>
           </View>
 
+          {new Date(m.scheduled_at ?? 0).getTime() > Date.now() &&
+          data.myAttendance === null ? (
+            <InlineMessage tone="warning">
+              Bu maç için katılım bildirmedin.
+            </InlineMessage>
+          ) : null}
+
           {new Date(m.scheduled_at ?? 0).getTime() > Date.now() ? (
             <View style={{ flexDirection: "row", gap: space[2], marginBottom: space[3] }}>
               <View style={{ flex: 1 }}>
@@ -419,10 +427,11 @@ export default function MatchDetailScreen() {
         </Card>
       )}
 
-      {/* Puanlama */}
+      {/* Puanlama: senden beklenen eylem, amber. */}
       {data.rating.open && (
         <Button
           title="Maçı oyla"
+          variant="accent"
           onPress={() => router.push(`/group/${id}/match/${matchId}/rate`)}
         />
       )}

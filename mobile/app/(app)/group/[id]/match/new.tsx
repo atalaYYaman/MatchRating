@@ -327,8 +327,10 @@ const s = {
     marginTop: space[2],
   },
   chip: {
+    minHeight: 44,
+    justifyContent: "center" as const,
     paddingVertical: space[2],
-    paddingHorizontal: space[3],
+    paddingHorizontal: space[4],
     borderRadius: radius.pill,
     borderWidth: border.width,
     borderColor: colors.borderDefault,

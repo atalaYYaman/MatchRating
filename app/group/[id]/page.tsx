@@ -176,7 +176,7 @@ export default function GroupPage() {
 
   return (
     <div>
-      <p><Link href="/groups">← Takımlarım</Link></p>
+      <p><Link className="back-link" href="/groups">← Takımlarım</Link></p>
       <h1>{group.name}</h1>
       <p>
         Davet kodu: <strong>{group.invite_code}</strong> — arkadaşların bu kodla

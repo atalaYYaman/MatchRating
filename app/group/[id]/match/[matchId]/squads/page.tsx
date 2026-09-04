@@ -160,7 +160,7 @@ export default function MatchSquadsPage() {
     return (
       <div>
         <p>
-          <Link href={`/group/${groupId}/match/${matchId}`}>← Maç</Link>
+          <Link className="back-link" href={`/group/${groupId}/match/${matchId}`}>← Maç</Link>
         </p>
         <ErrorText>{error}</ErrorText>
         {!error && <p className="muted">Yükleniyor...</p>}
@@ -172,7 +172,7 @@ export default function MatchSquadsPage() {
     return (
       <div>
         <p>
-          <Link href={`/group/${groupId}/match/${matchId}`}>← Maç</Link>
+          <Link className="back-link" href={`/group/${groupId}/match/${matchId}`}>← Maç</Link>
         </p>
         <Card>
           <p className="muted" style={{ margin: 0 }}>
@@ -191,7 +191,7 @@ export default function MatchSquadsPage() {
   return (
     <div>
       <p>
-        <Link href={`/group/${groupId}/match/${matchId}`}>← Maç</Link>
+        <Link className="back-link" href={`/group/${groupId}/match/${matchId}`}>← Maç</Link>
       </p>
       <h1>Kadrolar</h1>
       <p className="muted" style={{ marginTop: 4 }}>

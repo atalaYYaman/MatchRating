@@ -51,12 +51,15 @@ export const PHASE_LABEL: Record<MatchPhase, string> = {
   cancelled: "İptal",
 };
 
+// Faz rozeti yalnizca macin durumunu anlatir: yesil = surüyor, gri = bitti,
+// kirmizi = iptal. Amber bilerek disarida birakildi; o renk artik tek bir sey
+// icin ayrildi: "senden bir sey bekleniyor" (bkz. needsMyAction).
 export const PHASE_TONE: Record<
   MatchPhase,
   "neutral" | "brand" | "accent" | "danger"
 > = {
-  rating: "accent",
-  poll: "accent",
+  rating: "brand",
+  poll: "brand",
   scheduled: "brand",
   playing: "brand",
   completed: "neutral",

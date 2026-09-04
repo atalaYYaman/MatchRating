@@ -169,7 +169,8 @@ export function InlineMessage({
   tone = "neutral",
 }: {
   children: React.ReactNode;
-  tone?: "neutral" | "success" | "danger";
+  /** warning = senden bir sey bekleniyor (amber). */
+  tone?: "neutral" | "success" | "warning" | "danger";
 }) {
   const toneStyle = inlineTones[tone];
   return (
@@ -236,6 +237,11 @@ const inlineTones = {
   success: {
     container: { backgroundColor: colors.pitch100, borderColor: colors.pitch300 },
     label: { color: colors.pitch900 },
+  },
+  // Senden bir sey bekleniyor.
+  warning: {
+    container: { backgroundColor: colors.amber100, borderColor: colors.amber },
+    label: { color: colors.amber700 },
   },
   danger: {
     container: { backgroundColor: colors.brick100, borderColor: colors.brick },
@@ -313,9 +319,11 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   buttonSmall: {
+    // Yazisi kucuk ama dokunma alani tam boy: saha kenarinda tek elle
+    // kullanilan bir uygulamada 34px hedef affetmiyor.
     paddingVertical: space[2],
     paddingHorizontal: space[3] + 2,
-    minHeight: 34,
+    minHeight: 44,
   },
   buttonDisabled: {
     opacity: 0.55,

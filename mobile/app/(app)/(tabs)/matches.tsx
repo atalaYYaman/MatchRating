@@ -32,6 +32,14 @@ type MatchRow = {
   phase: MatchPhase;
   attending_count: number;
   poll_response_count: number;
+  /** Senden bekleneni anlatir; amber sinyalin kaynagi. */
+  myAction: "poll" | "rsvp" | "rating" | null;
+};
+
+const ACTION_LABEL: Record<"poll" | "rsvp" | "rating", string> = {
+  poll: "Anketi cevapla",
+  rsvp: "Katılım bildir",
+  rating: "Maçı puanla",
 };
 
 // Dort cip yeter: hepsi, senden bir sey beklenenler, gelecek, gecmis.
@@ -163,9 +171,12 @@ export default function MatchesScreen() {
             key={m.id}
             onPress={() => router.push(`/group/${m.group_id}/match/${m.id}`)}
           >
-            <View style={s.card}>
+            <View style={[s.card, m.myAction ? s.cardNeedsAction : null]}>
               <View style={s.head}>
-                <Badge tone={PHASE_TONE[m.phase]}>{PHASE_LABEL[m.phase]}</Badge>
+                <View style={{ flexDirection: "row", gap: space[2], flexShrink: 1 }}>
+                  <Badge tone={PHASE_TONE[m.phase]}>{PHASE_LABEL[m.phase]}</Badge>
+                  {m.myAction && <Badge tone="accent">{ACTION_LABEL[m.myAction]}</Badge>}
+                </View>
                 <Text style={[type.bodyS, { color: colors.textTertiary }]}>
                   {isAll ? `${m.group_name} · ` : ""}
                   {m.match_kind === "ic" ? "Takım içi" : "Dış rakip"}
@@ -213,14 +224,21 @@ export default function MatchesScreen() {
 }
 
 const s = {
+  // Amber tek bir sey icin ayrildi: senden bir sey bekleniyor.
+  cardNeedsAction: {
+    borderLeftWidth: 3,
+    borderLeftColor: colors.amber,
+  },
   filterRow: {
     flexDirection: "row" as const,
     flexWrap: "wrap" as const,
     gap: space[2],
   },
   filterChip: {
+    minHeight: 44,
+    justifyContent: "center" as const,
     paddingVertical: space[2],
-    paddingHorizontal: space[3],
+    paddingHorizontal: space[4],
     borderRadius: radius.pill,
     borderWidth: border.width,
     borderColor: colors.borderDefault,
