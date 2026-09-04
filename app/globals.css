@@ -1457,3 +1457,71 @@ a:has(> button) {
   gap: var(--space-4);
   margin-top: var(--space-2);
 }
+
+/* ---- Yonetim paneli ----
+   Masa basi arac; yine de mobil oncelikli kalsin diye izgara dar ekranda
+   ikiye duser. */
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--space-4) var(--space-3);
+}
+
+.admin-metric-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-heading);
+  line-height: 1.1;
+  color: var(--pitch-900);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-metric-sub {
+  font-size: var(--text-caption);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* Huni: cubuk genisligi ilk adima orantili, dususler altta yazili. */
+.funnel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.funnel-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.funnel-count {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-body);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.funnel-track {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--chalk-200);
+  overflow: hidden;
+}
+
+.funnel-bar {
+  height: 100%;
+  background: var(--pitch);
+  border-radius: var(--radius-pill);
+}
+
+.funnel-drop {
+  font-size: var(--text-caption);
+  color: var(--brick);
+  margin-top: 4px;
+}

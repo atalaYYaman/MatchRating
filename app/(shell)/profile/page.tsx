@@ -51,6 +51,9 @@ export default function ProfilePage() {
       </Card>
 
       <Card style={{ padding: 0 }}>
+        <Link href="/geri-bildirim" className="switcher-row">
+          Geri bildirim gönder
+        </Link>
         <Link href="/gizlilik" className="switcher-row">
           Gizlilik politikası
         </Link>

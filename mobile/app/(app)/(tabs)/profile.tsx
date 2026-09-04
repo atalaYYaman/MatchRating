@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button, Card, Divider } from "../../../components/ui";
 import { useActiveGroup } from "../../../lib/active-group";
@@ -60,6 +60,11 @@ export default function ProfileScreen() {
       </Card>
 
       <Card style={{ padding: 0 }}>
+        <Pressable style={s.row} onPress={() => router.push("/geri-bildirim")}>
+          <Text style={[type.bodyM, { color: colors.ink }]}>Geri bildirim gönder</Text>
+          <Feather name="chevron-right" size={18} color={colors.ink300} />
+        </Pressable>
+        <Divider />
         <View style={s.row}>
           <Text style={[type.bodyM, { color: colors.ink }]}>Gizlilik politikası</Text>
         </View>
@@ -91,6 +96,10 @@ const s = {
     justifyContent: "center" as const,
   },
   row: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    minHeight: 44,
     paddingHorizontal: space[4],
     paddingVertical: space[3] + 2,
   },

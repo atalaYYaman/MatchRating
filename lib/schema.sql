@@ -285,3 +285,25 @@ WHERE status = 'cancelled' AND cancelled_at IS NULL;
 
 CREATE INDEX IF NOT EXISTS idx_matches_cancelled_at
   ON matches (cancelled_at) WHERE status = 'cancelled';
+
+-- ==========================================================================
+-- GERI BILDIRIM
+-- ==========================================================================
+
+-- Kullanicilarin uygulama icinden gonderdigi sorun/oneri bildirimleri.
+-- user_id ON DELETE SET NULL: hesabini silen birinin geri bildirimi durmali,
+-- cunku cogu zaman ayrilma sebebini o mesaj anlatir.
+CREATE TABLE IF NOT EXISTS feedback (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  user_email TEXT,
+  user_name TEXT,
+  group_id UUID REFERENCES groups(id) ON DELETE SET NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('sorun', 'oneri', 'diger')),
+  message TEXT NOT NULL,
+  app TEXT CHECK (app IN ('web', 'mobil')),
+  status TEXT NOT NULL DEFAULT 'yeni' CHECK (status IN ('yeni', 'okundu', 'kapandi')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback (status, created_at DESC);
