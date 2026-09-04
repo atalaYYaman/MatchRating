@@ -105,6 +105,15 @@ export default function TabsLayout() {
         <Pressable style={styles.backdrop} onPress={() => setMoreOpen(false)}>
           <View style={[styles.sheet, { marginBottom: insets.bottom + 70 }]}>
             <Text style={styles.sheetHeader}>DAHA FAZLA</Text>
+            <Pressable
+              onPress={() => {
+                setMoreOpen(false);
+                router.push("/kariyer");
+              }}
+              style={[styles.item, styles.itemBorder]}
+            >
+              <Text style={styles.itemText}>Kariyerim</Text>
+            </Pressable>
             {MORE_ITEMS.map((item, index) => (
               <Pressable
                 key={item.path}

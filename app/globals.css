@@ -1208,3 +1208,33 @@ input[type="range"]:focus {
 
 .disclosure:hover { filter: none; color: var(--pitch); }
 .disclosure:active { transform: none; }
+
+/* ---- Kariyer sayfasi ---- */
+.stat-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 0;
+}
+
+.timeline-row + .timeline-row {
+  border-top: 1px solid var(--border-default);
+}
+
+.timeline-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  flex: none;
+}

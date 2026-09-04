@@ -43,6 +43,15 @@ export function TabBar() {
         <div className="more-backdrop" onClick={() => setMoreOpen(false)}>
           <div className="more-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="more-header">DAHA FAZLA</div>
+            <button
+              className="more-item"
+              onClick={() => {
+                setMoreOpen(false);
+                router.push("/kariyer");
+              }}
+            >
+              Kariyerim
+            </button>
             {MORE_ITEMS.map((item) => (
               <button
                 key={item.path}

@@ -17,8 +17,8 @@ export type GroupRating = {
 
 // Oy tabanli temel puan bu araliga kirpilir; mac duzeltmeleri uzun vadede
 // puani asiri uclara tasimasin diye.
-const MIN_FINAL_SCORE = 30;
-const MAX_FINAL_SCORE = 99;
+export const MIN_FINAL_SCORE = 30;
+export const MAX_FINAL_SCORE = 99;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
