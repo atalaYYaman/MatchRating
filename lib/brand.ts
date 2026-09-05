@@ -46,10 +46,15 @@ export const brand = {
   /** Canli adres — NEXT_PUBLIC_APP_URL ile degistirilebilir. */
   url,
   domain: domainOf(url),
-  /** Kullanicilarin ulasabilecegi adres. */
-  supportEmail: process.env.SUPPORT_EMAIL?.trim() || "info@panenka.tr",
   /**
-   * Giden e-postalarda gorunecek gonderen. Saglayicida DOGRULANMIS bir
+   * Kullanicilarin ulasabilecegi adres. NEXT_PUBLIC_ onekli, cunku bu
+   * bilgi kullaniciya gosteriliyor ve client bilesenlerinden de okunmasi
+   * gerekebiliyor; oneksiz olsaydi orada sessizce varsayilana duserdi.
+   */
+  supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() || "info@panenka.tr",
+  /**
+   * Giden e-postalarda gorunecek gonderen. YALNIZCA SUNUCU: bu deger
+   * hicbir zaman kullaniciya gosterilmedigi icin NEXT_PUBLIC_ degil. Saglayicida DOGRULANMIS bir
    * alan adi olmali; yeni domain hazir olana kadar MAIL_FROM ile mevcut
    * dogrulanmis adres verilebilir.
    */
