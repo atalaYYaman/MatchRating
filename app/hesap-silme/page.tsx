@@ -16,8 +16,8 @@ export default function DeleteAccountPage() {
       <h2>Nasıl talep edilir</h2>
       <p>
         Hesabına kayıtlı e-posta adresinden{" "}
-        <a href="mailto:info@otlak.com.tr?subject=Hesap%20Silme%20Talebi">
-          info@otlak.com.tr
+        <a href={`mailto:${brand.supportEmail}?subject=Hesap%20Silme%20Talebi`}>
+          {brand.supportEmail}
         </a>{" "}
         adresine "Hesap Silme Talebi" konulu bir e-posta gönder. Talebin en geç 30 gün
         içinde işleme alınır ve hesabınla ilişkili tüm kişisel veriler kalıcı olarak

@@ -62,6 +62,12 @@ export default function LoginScreen() {
                 Kayıt ol
               </Link>
             </View>
+
+            <View style={{ alignItems: "center", marginTop: 12 }}>
+              <Link href="/sifremi-unuttum" style={{ fontWeight: "600" }}>
+                Şifremi unuttum
+              </Link>
+            </View>
           </View>
         </Screen>
       </ScrollView>

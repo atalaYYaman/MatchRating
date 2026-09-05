@@ -48,7 +48,8 @@ export default function PrivacyPage() {
 
       <h2>İletişim</h2>
       <p>
-        Sorularınız için: <a href="mailto:info@otlak.com.tr">info@otlak.com.tr</a>
+        Sorularınız için:{" "}
+        <a href={`mailto:${brand.supportEmail}`}>{brand.supportEmail}</a>
       </p>
     </div>
   );

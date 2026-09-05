@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Card, Eyebrow, InlineMessage, PageHeader } from "@/components/ui";
+import { Badge, Card, Eyebrow, InlineMessage, PageHeader } from "@/components/ui";
 import { api, ApiError } from "@/lib/client-api";
 import { useActiveGroup } from "@/lib/active-group";
 import { brand } from "@/lib/brand";
@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [verified, setVerified] = useState(true);
   const [sending, setSending] = useState(false);
   const [sentMsg, setSentMsg] = useState<string | null>(null);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     api
@@ -32,6 +33,12 @@ export default function ProfilePage() {
         setVerified(d.emailVerified !== false);
       })
       .catch(() => setUser(null));
+
+    // Okunmamis bildirim sayisi: profil satirinda rozet olarak gosterilir.
+    api
+      .get<{ unread: number }>("/api/notifications")
+      .then((d) => setUnread(d.unread ?? 0))
+      .catch(() => setUnread(0));
   }, []);
 
   async function logout() {
@@ -103,7 +110,8 @@ export default function ProfilePage() {
 
       <Card style={{ padding: 0 }}>
         <Link href="/bildirimler" className="switcher-row">
-          Bildirimler
+          <span>Bildirimler</span>
+          {unread > 0 && <Badge tone="accent">{unread}</Badge>}
         </Link>
         <Link href="/geri-bildirim" className="switcher-row">
           Geri bildirim gönder

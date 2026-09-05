@@ -6,6 +6,9 @@ import path from "node:path";
 // Kelime sinirina bakiyoruz: maybeProcessMatchRatings gibi tanimlayicilar
 // markayi degil alan terimini ("mac puanlama") anlatiyor, onlar sayilmamali.
 const OLD_NAME_RE = /(?<![A-Za-z])(MatchRating|MATCHRATING)(?![a-z])/;
+// Eski iletisim adresi de kullaniciya gorunen metne gomulmemeli; adres
+// brand.supportEmail uzerinden okunmali ki tek yerden degissin.
+const OLD_CONTACT_RE = /info@otlak\.com\.tr/;
 // Bilerek degismeyenler: oturum anahtarlari, EAS slug'i, Play Store paketi.
 const ALLOWED = [
   "matchrating_group_scope",
@@ -36,7 +39,7 @@ function walk(dir) {
         trimmed.startsWith("--")
       ) return;
       if (ALLOWED.some((a) => line.includes(a))) return;
-      if (OLD_NAME_RE.test(line)) {
+      if (OLD_NAME_RE.test(line) || OLD_CONTACT_RE.test(line)) {
         hits.push(`${full}:${i + 1}  ${trimmed.slice(0, 90)}`);
       }
     });

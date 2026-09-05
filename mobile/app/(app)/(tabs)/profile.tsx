@@ -1,15 +1,58 @@
 import { Feather } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button, Card, Divider } from "../../../components/ui";
+import { Badge, Button, Card, Divider, InlineMessage } from "../../../components/ui";
 import { useActiveGroup } from "../../../lib/active-group";
 import { useAuth } from "../../../lib/auth-context";
+import { api, ApiError } from "../../../lib/api";
 import { colors, radius, space, type } from "../../../lib/theme";
 import { brand } from "../../../lib/brand";
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  // Profil ekrani acildiginda hem dogrulama durumunu hem okunmamis
+  // bildirim sayisini tazeler; ikisi de kullanicidan bir sey bekliyor.
+  const [verified, setVerified] = useState(true);
+  const [unread, setUnread] = useState(0);
+  const [sending, setSending] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      (async () => {
+        try {
+          const [me, n] = await Promise.all([
+            api.get<{ emailVerified?: boolean }>("/api/auth/me"),
+            api.get<{ unread: number }>("/api/notifications"),
+          ]);
+          if (!alive) return;
+          setVerified(me.emailVerified !== false);
+          setUnread(n.unread ?? 0);
+        } catch {
+          // Sessiz gec: profil yine de acilsin.
+        }
+      })();
+      return () => {
+        alive = false;
+      };
+    }, [])
+  );
+
+  async function resendVerification() {
+    setSending(true);
+    setNotice(null);
+    try {
+      await api.post("/api/auth/verify/send");
+      setNotice("Doğrulama e-postası gönderildi. Gelen kutunu kontrol et.");
+    } catch (err) {
+      setNotice(err instanceof ApiError ? err.message : "Gönderilemedi.");
+    } finally {
+      setSending(false);
+    }
+  }
   const { groups, activeGroup } = useActiveGroup();
   const insets = useSafeAreaInsets();
 
@@ -60,10 +103,35 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
+      {!verified && (
+        <Card>
+          <InlineMessage tone="warning">
+            E-posta adresin doğrulanmadı. Doğrulanmış adres, şifreni
+            unuttuğunda hesabını geri almanın tek yolu.
+          </InlineMessage>
+          {notice ? (
+            <Text
+              style={[type.bodyS, { color: colors.textSecondary, marginBottom: space[2] }]}
+            >
+              {notice}
+            </Text>
+          ) : null}
+          <Button
+            title="Doğrulama e-postası gönder"
+            variant="secondary"
+            onPress={resendVerification}
+            loading={sending}
+          />
+        </Card>
+      )}
+
       <Card style={{ padding: 0 }}>
         <Pressable style={s.row} onPress={() => router.push("/bildirimler")}>
           <Text style={[type.bodyM, { color: colors.ink }]}>Bildirimler</Text>
-          <Feather name="chevron-right" size={18} color={colors.ink300} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: space[2] }}>
+            {unread > 0 && <Badge tone="accent">{unread}</Badge>}
+            <Feather name="chevron-right" size={18} color={colors.ink300} />
+          </View>
         </Pressable>
         <Divider />
         <Pressable style={s.row} onPress={() => router.push("/geri-bildirim")}>

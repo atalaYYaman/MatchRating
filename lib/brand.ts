@@ -1,14 +1,36 @@
-// Markanin TEK kaynagi. Isim ileride yine degisebilir; o yuzden kullaniciya
-// gorunen her yerde bu dosya okunur, string gomulmez.
+// Markanin TEK kaynagi. Isim ve alan adi ileride yine degisebilir; o yuzden
+// kullaniciya gorunen her yerde bu dosya okunur, string gomulmez.
 //
-// Isim degistiginde: yalnizca bu dosyayi ve mobile/lib/brand.ts'i guncelle,
-// sonra `npm run brand:check` ile kacak kalmadigini dogrula.
+// Isim degistiginde: bu dosyayi ve mobile/lib/brand.ts'i guncelle, sonra
+// `npm run brand:check` ile kacak kalmadigini dogrula.
+//
+// Alan adi ve gonderen adresi ORTAM DEGISKENINDEN okunur: yeni domain
+// hazir oldugunda kod degistirip yeniden dagitmak gerekmesin, Vercel'de
+// degiskeni guncellemek yetsin.
 //
 // DEGISTIRILMEYECEKLER (bilerek marka disinda tutuldu):
 //   - storage anahtarlari (STORAGE_PREFIX): degisirse herkesin oturumu
 //     kapanir ve takim kapsam secimi sifirlanir.
-//   - mobil paket adi (com.otlak.matchrating): Play Store'da bir kez
-//     yayinlandiktan sonra degistirilemez, yeni uygulama sayilir.
+//   - mobil paket adi (com.otlak.matchrating) ve EAS slug'i: Play Store'da
+//     yayinlandiktan sonra degistirilemez, slug degisirse OTA kirilir.
+
+/** Yeni alan adi hazir olana kadar calisan adres burada kalir. */
+const FALLBACK_URL = "https://otlak.xyz";
+
+function appUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  return (raw && raw.replace(/\/$/, "")) || FALLBACK_URL;
+}
+
+function domainOf(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  }
+}
+
+const url = appUrl();
 
 export const brand = {
   /** Arayuzde gorunen isim. */
@@ -21,13 +43,17 @@ export const brand = {
   description:
     "Arkadaş grubunla halı saha maçlarını planla, birbirinizi puanlayın ve " +
     "güce göre denk takımlar kurun.",
-  /** Canli adres. */
-  domain: "otlak.xyz",
-  url: "https://otlak.xyz",
+  /** Canli adres — NEXT_PUBLIC_APP_URL ile degistirilebilir. */
+  url,
+  domain: domainOf(url),
   /** Kullanicilarin ulasabilecegi adres. */
-  supportEmail: "info@otlak.com.tr",
-  /** Giden e-postalarda gorunecek gonderen. */
-  mailFrom: "Panenka <bildirim@otlak.xyz>",
+  supportEmail: process.env.SUPPORT_EMAIL?.trim() || "info@panenka.tr",
+  /**
+   * Giden e-postalarda gorunecek gonderen. Saglayicida DOGRULANMIS bir
+   * alan adi olmali; yeni domain hazir olana kadar MAIL_FROM ile mevcut
+   * dogrulanmis adres verilebilir.
+   */
+  mailFrom: process.env.MAIL_FROM?.trim() || "Panenka <bildirim@panenka.tr>",
 } as const;
 
 // Oturum/kapsam anahtarlari markadan bagimsiz: isim degisince kullanicilar
