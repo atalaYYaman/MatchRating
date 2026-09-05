@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge, Card, ErrorText, Eyebrow, Field, PageHeader } from "@/components/ui";
 import { api, ApiError } from "@/lib/client-api";
@@ -8,6 +9,7 @@ import { brand } from "@/lib/brand";
 import { useActiveGroup } from "@/lib/active-group";
 
 export default function GroupsPage() {
+  const router = useRouter();
   const { groups, activeGroup, isAll, setScope, refresh, loading } = useActiveGroup();
 
   const [newGroupName, setNewGroupName] = useState("");
@@ -23,9 +25,15 @@ export default function GroupsPage() {
     setBusy(true);
     setError(null);
     try {
-      await api.post("/api/groups", { name: newGroupName.trim() });
+      const created = await api.post<{ group: { id: string } }>("/api/groups", {
+        name: newGroupName.trim(),
+      });
       setNewGroupName("");
       await refresh();
+      // Yeni takimin sayfasina goturuyoruz: orada davet kodu ve "ilk macini
+      // kur" adimi karsiliyor. Once listede birakiyorduk ve kullanici ne
+      // yapacagini bilmiyordu.
+      if (created?.group?.id) router.push(`/group/${created.group.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Takım oluşturulamadı.");
     } finally {

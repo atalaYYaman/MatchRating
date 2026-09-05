@@ -19,7 +19,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   // uzak veritabanina gidiş-dönüş sayisini azaltiyoruz. G-B-M kaydi aktif
   // sezona gore hesaplanir.
   const season = await getActiveSeason(params.id);
-  const [isMember, groupResult, membersResult, records] = await Promise.all([
+  const [isMember, groupResult, membersResult, records, matchCountRes] = await Promise.all([
     assertMember(params.id, session.userId),
     sql`
       SELECT id, name, invite_code, owner_id, ratings_breakdown_public, created_at
@@ -38,6 +38,8 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       ORDER BY gm.joined_at ASC
     `,
     computeGroupRecords(params.id, season.id),
+    // Takim sayfasi "ilk mac" yonlendirmesini bununla karar veriyor.
+    sql`SELECT count(*)::int AS c FROM matches WHERE group_id = ${params.id}`,
   ]);
 
   if (!isMember) return NextResponse.json({ error: "Bu takıma erişiminiz yok." }, { status: 403 });
@@ -55,6 +57,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     group,
     members,
     activeSeason: { id: season.id, name: season.name },
+    matchCount: Number(matchCountRes.rows[0]?.c ?? 0),
     // Istemci "takimdan ayril" icin kendi uyelik satirini hedefliyor.
     meId: session.userId,
     isOwner: group.owner_id === session.userId,

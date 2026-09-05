@@ -93,8 +93,9 @@ export default function MatchesScreen() {
     setRefreshing(false);
   }
 
-  // "Tüm takımlar" gorunumunde hedef belirsiz: tek takimi olan kullanici icin
-  // o takim varsayilir, birden fazlaysa buton gizlenir.
+  // "Tüm takımlar" gorunumunde hedef belirsiz. Butonu GIZLEMEK yanlisti:
+  // birden fazla takimi olan bir yonetici maci hicbir yerden kuramiyordu.
+  // Hedef belirsizse takim listesine goturuyoruz, orada seciyor.
   const newMatchTarget = activeGroup ?? (groups.length === 1 ? groups[0] : null);
 
   const activeFilter = FILTERS.find((f) => f.key === filter);
@@ -119,10 +120,14 @@ export default function MatchesScreen() {
 
       <ErrorText>{error}</ErrorText>
 
-      {newMatchTarget && (
+      {groups.length > 0 && (
         <Button
           title="Yeni maç oluştur"
-          onPress={() => router.push(`/group/${newMatchTarget.id}/match/new`)}
+          onPress={() =>
+            router.push(
+              newMatchTarget ? `/group/${newMatchTarget.id}/match/new` : "/groups"
+            )
+          }
         />
       )}
 

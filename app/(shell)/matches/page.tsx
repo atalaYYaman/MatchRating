@@ -73,8 +73,9 @@ export default function MatchesPage() {
     load();
   }, [load]);
 
-  // "Tüm takımlar" gorunumunde hedef belirsiz: yalnizca tek takimin
-  // yoneticisiysen dogrudan oraya, degilse buton gizlenir.
+  // "Tüm takımlar" gorunumunde hedef belirsiz. Butonu GIZLEMEK yanlisti:
+  // birden fazla takimi olan bir yonetici maci hicbir yerden kuramiyordu.
+  // Hedef belirsizse takim listesine goturuyoruz, orada secebiliyor.
   const newMatchTarget = activeGroup ?? (groups.length === 1 ? groups[0] : null);
   const newMatchHref = newMatchTarget
     ? `/group/${newMatchTarget.id}/match/new`
@@ -91,8 +92,8 @@ export default function MatchesPage() {
         <div className="grow">
           <TeamSwitcher eyebrow="MAÇLAR · TAKIM" />
         </div>
-        {newMatchHref && (
-          <Link href={newMatchHref}>
+        {groups.length > 0 && (
+          <Link href={newMatchHref ?? "/groups"}>
             <button className="small">Yeni maç</button>
           </Link>
         )}

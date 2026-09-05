@@ -51,19 +51,25 @@ export default function GroupScreen() {
   const [savingMember, setSavingMember] = useState(false);
   // Ayni anda tek oyuncunun yetenekleri acik kalir.
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
+  const [matchCount, setMatchCount] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
       const [groupData, ratingsData] = await Promise.all([
-        api.get<{ group: Group; members: Member[]; isOwner: boolean; meId: string }>(
-          `/api/groups/${id}`
-        ),
+        api.get<{
+          group: Group;
+          members: Member[];
+          isOwner: boolean;
+          meId: string;
+          matchCount: number;
+        }>(`/api/groups/${id}`),
         api.get<{ ratings: Rating[] }>(`/api/groups/${id}/ratings`),
       ]);
       setGroup(groupData.group);
       setMembers(groupData.members);
       setIsOwner(groupData.isOwner);
       setMeId(groupData.meId ?? null);
+      setMatchCount(groupData.matchCount ?? null);
       setRatings(ratingsData.ratings);
       setError(null);
     } catch (err) {
@@ -197,9 +203,45 @@ export default function GroupScreen() {
           </Card>
         )}
 
+        {/* Ilk mac yonlendirmesi: takim kuruldu ama hic mac yoksa yapilacak
+            tek is bu. Takimlarin cogu tam bu adimda takilip kaliyordu. */}
+        {matchCount === 0 && (
+          <Card style={{ borderLeftWidth: 3, borderLeftColor: colors.amber }}>
+            <Text style={[type.labelS, { color: colors.textTertiary, textTransform: "uppercase" }]}>
+              Sıradaki adım
+            </Text>
+            <Text style={[type.displayS, { color: colors.ink, marginTop: 4 }]}>
+              İlk maçını kur
+            </Text>
+            <Text
+              style={[type.bodyS, { color: colors.textSecondary, marginTop: 4, marginBottom: space[3] }]}
+            >
+              {isOwner
+                ? `Takımın hazır. Arkadaşların ${group?.invite_code ?? ""} koduyla katılabilir; bir maç açtığında herkese bildirim gider.`
+                : "Bu takımda henüz maç yok. Yönetici bir maç açtığında burada göreceksin."}
+            </Text>
+            {isOwner && (
+              <Button
+                title="Maç oluştur"
+                variant="accent"
+                onPress={() => router.push(`/group/${id}/match/new`)}
+              />
+            )}
+          </Card>
+        )}
+
         <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+          {isOwner && matchCount !== 0 && (
+            <View style={{ flex: 1 }}>
+              <Button title="Maç Oluştur" onPress={() => router.push(`/group/${id}/match/new`)} />
+            </View>
+          )}
           <View style={{ flex: 1 }}>
-            <Button title="Oylama Yap" onPress={() => router.push(`/group/${id}/vote`)} />
+            <Button
+              title="Oylama Yap"
+              variant={isOwner && matchCount !== 0 ? "secondary" : "primary"}
+              onPress={() => router.push(`/group/${id}/vote`)}
+            />
           </View>
         </View>
         <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>

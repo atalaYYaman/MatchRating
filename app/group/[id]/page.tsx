@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { SKILLS } from "@/lib/skills";
+import { Eyebrow } from "@/components/ui";
 import { formatPositions, PositionKey } from "@/lib/positions";
 
 type Member = {
@@ -52,6 +53,7 @@ export default function GroupPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNickname, setEditNickname] = useState("");
   const [savingMember, setSavingMember] = useState(false);
+  const [matchCount, setMatchCount] = useState<number | null>(null);
   // Ayni anda tek oyuncunun yetenekleri acik kalir.
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
 
@@ -75,6 +77,7 @@ export default function GroupPage() {
       setIsOwner(Boolean(groupData.isOwner));
       setMeId(groupData.meId ?? null);
       setRatingsBreakdownPublic(Boolean(groupData.ratingsBreakdownPublic));
+      setMatchCount(groupData.matchCount ?? null);
       if (ratingsRes.ok) setRatings(ratingsData.ratings);
     } finally {
       setLoading(false);
@@ -185,8 +188,33 @@ export default function GroupPage() {
         katılabilir.
       </p>
 
+      {/* Ilk mac yonlendirmesi: takim kuruldu ama hic mac yoksa, yapilacak
+          tek is bu. Panel verisi takimlarin buyuk cogunlugunun bu adimda
+          takilip kaldigini gosteriyordu. */}
+      {matchCount === 0 && (
+        <div className="card card-raised" style={{ borderLeft: "3px solid var(--amber)" }}>
+          <Eyebrow>SIRADAKİ ADIM</Eyebrow>
+          <h2 style={{ margin: "8px 0 4px" }}>İlk maçını kur</h2>
+          <p className="muted" style={{ marginTop: 0 }}>
+            {isOwner
+              ? `Takımın hazır. Arkadaşların ${group.invite_code} koduyla katılabilir; bir maç açtığında herkese bildirim gider.`
+              : "Bu takımda henüz maç yok. Yönetici bir maç açtığında burada göreceksin."}
+          </p>
+          {isOwner && (
+            <Link href={`/group/${groupId}/match/new`}>
+              <button className="accent full">Maç oluştur</button>
+            </Link>
+          )}
+        </div>
+      )}
+
       <div className="row" style={{ marginBottom: 20 }}>
-        <Link href={`/group/${groupId}/vote`}><button>Oylama Yap</button></Link>
+        {isOwner && matchCount !== 0 && (
+          <Link href={`/group/${groupId}/match/new`}><button>Maç Oluştur</button></Link>
+        )}
+        <Link href={`/group/${groupId}/vote`}>
+          <button className={isOwner && matchCount !== 0 ? "secondary" : ""}>Oylama Yap</button>
+        </Link>
         <Link href={`/group/${groupId}/teams`}><button className="secondary">Takımları Oluştur</button></Link>
         <Link href={`/group/${groupId}/seasons`}><button className="secondary">Sezonlar</button></Link>
         {(isOwner || ratingsBreakdownPublic) && (

@@ -35,9 +35,15 @@ export default function GroupsScreen() {
     setBusy(true);
     setError(null);
     try {
-      await api.post("/api/groups", { name: newGroupName.trim() });
+      const created = await api.post<{ group: { id: string } }>("/api/groups", {
+        name: newGroupName.trim(),
+      });
       setNewGroupName("");
       await refresh();
+      // Yeni takimin sayfasina goturuyoruz: orada davet kodu ve "ilk macini
+      // kur" adimi karsiliyor. Once listede birakiyorduk, kullanici ne
+      // yapacagini bilmiyordu.
+      if (created?.group?.id) router.push(`/group/${created.group.id}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Takım oluşturulamadı.");
     } finally {
