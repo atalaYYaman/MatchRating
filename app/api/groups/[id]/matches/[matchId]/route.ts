@@ -6,6 +6,7 @@ import { maybeProcessMatchRatings } from "@/lib/matchRating";
 import { matchPhase, ratingDeadline } from "@/lib/matchStatus";
 import { getMatchSquads } from "@/lib/squads";
 import { isPollExpired, maybeAutoClosePoll } from "@/lib/pollClose";
+import { groupMemberIds, notifySafe } from "@/lib/notifications";
 
 export async function GET(
   _req: NextRequest,
@@ -181,5 +182,15 @@ export async function DELETE(
     UPDATE matches SET status = 'cancelled', cancelled_at = now()
     WHERE id = ${params.matchId}
   `;
+
+  await notifySafe({
+    userIds: await groupMemberIds(params.id, session.userId),
+    groupId: params.id,
+    matchId: params.matchId,
+    kind: "mac_iptal",
+    title: "Maç iptal edildi",
+    dedupeKey: `mac_iptal:${params.matchId}`,
+  });
+
   return NextResponse.json({ ok: true });
 }

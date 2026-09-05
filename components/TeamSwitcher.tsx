@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import { useActiveGroup } from "@/lib/active-group";
+import { brand } from "@/lib/brand";
 
 // Sol ustteki takim kapsami secici. Ana sayfa ve Maclar sekmesinde ayni
 // bilesen kullanilir; secim ortak context'te tutuldugu icin sekmeler arasi
 // gecerken korunur.
-export function TeamSwitcher({ eyebrow = "MATCHRATING · TAKIM" }: { eyebrow?: string }) {
+export function TeamSwitcher({
+  eyebrow = `${brand.nameUpper} · TAKIM`,
+}: {
+  eyebrow?: string;
+}) {
   const { groups, activeGroup, isAll, setScope } = useActiveGroup();
   const [open, setOpen] = useState(false);
 

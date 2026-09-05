@@ -8,6 +8,7 @@ import { api, ApiError } from "../../../lib/api";
 import { useActiveGroup } from "../../../lib/active-group";
 import { useAuth } from "../../../lib/auth-context";
 import { border, colors, radius, space, type } from "../../../lib/theme";
+import { brand } from "../../../lib/brand";
 
 export default function GroupsScreen() {
   const { groups, activeGroup, isAll, setScope, refresh, loading } = useActiveGroup();
@@ -71,7 +72,7 @@ export default function GroupsScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <View style={{ marginBottom: space[1] }}>
-        <Text style={s.eyebrow}>MATCHRATING</Text>
+        <Text style={s.eyebrow}>{brand.nameUpper}</Text>
         <Text style={[type.displayM, { color: colors.ink, marginTop: 2 }]}>
           Takımlarım
         </Text>

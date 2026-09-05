@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { createSessionToken, setSessionCookie } from "@/lib/auth";
 import { hashPassword } from "@/lib/password";
+import { sendVerificationMail } from "@/lib/authMails";
 
 export async function POST(req: NextRequest) {
   try {
@@ -44,6 +45,17 @@ export async function POST(req: NextRequest) {
       name: user.name,
     });
     await setSessionCookie(token);
+
+    // Dogrulama e-postasi. AWAIT sart: sunucusuz ortamda yanit dondukten
+    // sonra bekleyen promise'lerin calisacagi garanti degil, "void" ile
+    // birakilirsa token bazen hic uretilmiyor. Gonderim basarisiz olsa da
+    // kayit basarili sayilir; kullaniciyi kapida bekletmek yanlis olur.
+    try {
+      await sendVerificationMail(user.id, user.email, user.name);
+    } catch {
+      // Saglayici yapilandirilmamis ya da ulasilamiyor; dogrulama
+      // sonradan profilden istenebilir.
+    }
 
     return NextResponse.json({ user, token });
   } catch (err) {

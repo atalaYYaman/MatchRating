@@ -6,6 +6,7 @@ import { Button, Card, Divider } from "../../../components/ui";
 import { useActiveGroup } from "../../../lib/active-group";
 import { useAuth } from "../../../lib/auth-context";
 import { colors, radius, space, type } from "../../../lib/theme";
+import { brand } from "../../../lib/brand";
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -23,7 +24,7 @@ export default function ProfileScreen() {
       }}
     >
       <View>
-        <Text style={s.eyebrow}>MATCHRATING</Text>
+        <Text style={s.eyebrow}>{brand.nameUpper}</Text>
         <Text style={[type.displayM, { color: colors.ink, marginTop: 2 }]}>Profil</Text>
       </View>
 
@@ -60,6 +61,11 @@ export default function ProfileScreen() {
       </Card>
 
       <Card style={{ padding: 0 }}>
+        <Pressable style={s.row} onPress={() => router.push("/bildirimler")}>
+          <Text style={[type.bodyM, { color: colors.ink }]}>Bildirimler</Text>
+          <Feather name="chevron-right" size={18} color={colors.ink300} />
+        </Pressable>
+        <Divider />
         <Pressable style={s.row} onPress={() => router.push("/geri-bildirim")}>
           <Text style={[type.bodyM, { color: colors.ink }]}>Geri bildirim gönder</Text>
           <Feather name="chevron-right" size={18} color={colors.ink300} />

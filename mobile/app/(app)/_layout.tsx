@@ -40,6 +40,7 @@ export default function AppLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="kariyer" options={{ title: "Kariyerim" }} />
         <Stack.Screen name="geri-bildirim" options={{ title: "Geri Bildirim" }} />
+        <Stack.Screen name="bildirimler" options={{ title: "Bildirimler" }} />
         <Stack.Screen name="group/[id]/index" options={{ title: "Takım" }} />
         <Stack.Screen name="group/[id]/vote" options={{ title: "Oylama Yap" }} />
         <Stack.Screen name="group/[id]/teams" options={{ title: "Takımları Oluştur" }} />

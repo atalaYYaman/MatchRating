@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Badge, Card, ErrorText, Eyebrow, Field, PageHeader } from "@/components/ui";
 import { api, ApiError } from "@/lib/client-api";
+import { brand } from "@/lib/brand";
 import { useActiveGroup } from "@/lib/active-group";
 
 export default function GroupsPage() {
@@ -49,7 +50,7 @@ export default function GroupsPage() {
 
   return (
     <div>
-      <PageHeader eyebrow="MATCHRATING" title="Takımlarım" />
+      <PageHeader eyebrow={brand.nameUpper} title="Takımlarım" />
 
       <ErrorText>{error}</ErrorText>
 

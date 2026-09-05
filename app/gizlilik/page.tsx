@@ -1,5 +1,6 @@
+import { brand } from "@/lib/brand";
 export const metadata = {
-  title: "Gizlilik Politikası - MatchRating",
+  title: `Gizlilik Politikası - ${brand.name}`,
 };
 
 export default function PrivacyPage() {
@@ -9,7 +10,7 @@ export default function PrivacyPage() {
       <p>Son güncelleme: 31 Ağustos 2026</p>
 
       <p>
-        MatchRating, kullanıcıların takım kurup arkadaşlarını davet ettiği, birbirlerini
+        {brand.name}, kullanıcıların takım kurup arkadaşlarını davet ettiği, birbirlerini
         futbol yeteneği üzerinden oyladığı ve bu oylara göre dengeli takımlar oluşturduğu
         bir uygulamadır. Bu sayfa, uygulamayı kullanırken hangi verilerin toplandığını ve
         nasıl kullanıldığını açıklar.

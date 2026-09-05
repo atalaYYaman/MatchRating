@@ -1,5 +1,6 @@
+import { brand } from "@/lib/brand";
 export const metadata = {
-  title: "Hesap Silme - MatchRating",
+  title: `Hesap Silme - ${brand.name}`,
 };
 
 export default function DeleteAccountPage() {
@@ -8,7 +9,7 @@ export default function DeleteAccountPage() {
       <h1>Hesap ve Veri Silme</h1>
 
       <p>
-        MatchRating hesabını ve hesabınla ilişkili tüm verileri (isim, e-posta, üye olduğun
+        {brand.name} hesabını ve hesabınla ilişkili tüm verileri (isim, e-posta, üye olduğun
         takımlar, verdiğin ve aldığın oylar) silmemizi istiyorsan aşağıdaki adımı izle.
       </p>
 

@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-na
 import { Button, ErrorText, Field, Label, Screen, Title } from "../components/ui";
 import { useAuth } from "../lib/auth-context";
 import { ApiError } from "../lib/api";
+import { brand } from "../lib/brand";
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -33,7 +34,7 @@ export default function LoginScreen() {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <Screen>
           <View style={{ flex: 1, justifyContent: "center" }}>
-            <Title>MatchRating'e giriş yap</Title>
+            <Title>{brand.name}&apos;ya giriş yap</Title>
             <ErrorText>{error}</ErrorText>
 
             <Label>E-posta</Label>

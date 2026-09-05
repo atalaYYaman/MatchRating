@@ -307,3 +307,43 @@ CREATE TABLE IF NOT EXISTS feedback (
 );
 
 CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback (status, created_at DESC);
+
+-- ==========================================================================
+-- E-POSTA DOGRULAMA / SIFRE SIFIRLAMA / BILDIRIMLER
+-- ==========================================================================
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ;
+
+-- Tek kullanimlik token'lar. Ham token asla saklanmaz; yalnizca SHA-256
+-- ozeti tutulur ki veritabani sizsa bile linkler kullanilamasin.
+CREATE TABLE IF NOT EXISTS auth_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK (kind IN ('dogrulama', 'sifirlama')),
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON auth_tokens (user_id, kind);
+
+-- Uygulama ici bildirimler. E-posta gerektirmez; okundugunda isaretlenir.
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
+  match_id UUID REFERENCES matches(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT,
+  /* Ayni olay icin ayni kisiye ikinci kez bildirim uretilmesin diye. */
+  dedupe_key TEXT,
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user
+  ON notifications (user_id, read_at, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_dedupe
+  ON notifications (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL;

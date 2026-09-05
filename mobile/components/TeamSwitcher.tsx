@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useActiveGroup } from "../lib/active-group";
+import { brand } from "../lib/brand";
 import { border, colors, radius, space, type } from "../lib/theme";
 import { Badge } from "./ui";
 
@@ -9,7 +10,7 @@ import { Badge } from "./ui";
 // bilesen kullanilir; secim ortak context'te tutuldugu icin sekmeler arasi
 // gecerken korunur. Web'deki components/TeamSwitcher.tsx ile ayni davranis.
 export function TeamSwitcher({
-  eyebrow = "MATCHRATING · TAKIM",
+  eyebrow = `${brand.nameUpper} · TAKIM`,
 }: {
   eyebrow?: string;
 }) {

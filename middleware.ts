@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionToken } from "@/lib/auth";
 
-const PUBLIC_PATHS = ["/login", "/register", "/gizlilik", "/hesap-silme"];
+const PUBLIC_PATHS = ["/login", "/register", "/gizlilik", "/hesap-silme", "/sifremi-unuttum"];
+// Token tasiyan rotalar: giris gerektirmez (sifresini unutan giris yapamaz).
+const PUBLIC_PREFIXES = ["/dogrula/", "/sifre-sifirla/"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -19,7 +21,10 @@ export async function middleware(req: NextRequest) {
   const token = req.cookies.get("session")?.value;
   const session = token ? await verifySessionToken(token) : null;
 
-  const isPublic = PUBLIC_PATHS.includes(pathname) || pathname === "/";
+  const isPublic =
+    PUBLIC_PATHS.includes(pathname) ||
+    PUBLIC_PREFIXES.some((p) => pathname.startsWith(p)) ||
+    pathname === "/";
 
   if (!session && !isPublic) {
     const url = req.nextUrl.clone();

@@ -65,6 +65,9 @@ export default function LoginPage() {
       <p>
         Hesabın yok mu? <Link href="/register">Kayıt ol</Link>
       </p>
+      <p style={{ textAlign: "center" }}>
+        <Link href="/sifremi-unuttum">Şifremi unuttum</Link>
+      </p>
     </div>
   );
 }

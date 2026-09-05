@@ -6,6 +6,7 @@ import { maybeProcessMatchRatings } from "@/lib/matchRating";
 import { getActiveSeason } from "@/lib/seasons";
 import { maybeAutoClosePoll } from "@/lib/pollClose";
 import { sweepCancelledMatches } from "@/lib/cancelledSweep";
+import { groupMemberIds, notifySafe } from "@/lib/notifications";
 
 const MAX_POLL_OPTIONS = 12;
 // Anket varsayilan olarak en erken secenegin baslangicina kadar acik kalir.
@@ -183,7 +184,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
          ${note}, ${scheduledAt}, ${location}, 'scheduled', ${season.id}, ${effectiveRsvp})
       RETURNING id, mode, match_kind, scheduled_at, location, status, created_at
     `;
-    return NextResponse.json({ match: result.rows[0] });
+
+    const created = result.rows[0];
+    await notifySafe({
+      userIds: await groupMemberIds(params.id, session.userId),
+      groupId: params.id,
+      matchId: created.id as string,
+      kind: "mac_olusturuldu",
+      title: "Yeni maç var",
+      body: location,
+      dedupeKey: `mac_olusturuldu:${created.id}`,
+    });
+
+    return NextResponse.json({ match: created });
   }
 
   const options = parseOptions(body?.options);
@@ -227,6 +240,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     `INSERT INTO match_options (match_id, starts_at, location) VALUES ${values.join(", ")}`,
     insertParams
   );
+
+  await notifySafe({
+    userIds: await groupMemberIds(params.id, session.userId),
+    groupId: params.id,
+    matchId: match.id as string,
+    kind: "mac_olusturuldu",
+    title: "Yeni anket açıldı",
+    body: "Katılabileceğin tarihleri işaretle.",
+    dedupeKey: `mac_olusturuldu:${match.id}`,
+  });
 
   return NextResponse.json({ match });
 }

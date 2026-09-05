@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { brand } from "@/lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MatchRating",
+  title: brand.name,
   description: "Takım arkadaşlarını oyla, dengeli takımlar oluştur.",
 };
 

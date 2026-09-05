@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import { groupMemberIds, notifySafe } from "@/lib/notifications";
 
 // Anketin bir secenegini kesinlestirir: maci planlar ve anket cevaplarindan
 // yoklamayi onceden doldurur. Hem yoneticinin elle secimi hem de sure dolunca
@@ -30,6 +31,21 @@ export async function finalizeMatchOption(
     WHERE r.match_id = ${matchId} AND r.available = false
     ON CONFLICT (match_id, user_id) DO NOTHING
   `;
+
+  // Anket kapandi, tarih belli: gruba haber ver.
+  const g = await sql`SELECT group_id FROM matches WHERE id = ${matchId}`;
+  const groupId = g.rows[0]?.group_id as string | undefined;
+  if (groupId) {
+    await notifySafe({
+      userIds: await groupMemberIds(groupId),
+      groupId,
+      matchId,
+      kind: "mac_planlandi",
+      title: "Maç tarihi kesinleşti",
+      body: option.location,
+      dedupeKey: `mac_planlandi:${matchId}`,
+    });
+  }
 }
 
 export type AutoCloseResult =

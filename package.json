@@ -1,5 +1,5 @@
 {
-  "name": "matchrating",
+  "name": "panenka",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:init": "node scripts/init-db.mjs"
+    "db:init": "node scripts/init-db.mjs",
+    "brand:check": "node scripts/brand-check.mjs"
   },
   "dependencies": {
     "@vercel/postgres": "^0.10.0",
