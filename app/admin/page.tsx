@@ -38,6 +38,14 @@ type Stats = {
   }[];
   recentUsers: { id: string; name: string; email: string; created_at: string; groups: number }[];
   feedback: { open: number; total: number };
+  config: {
+    appUrl: string;
+    mailConfigured: boolean;
+    mailFrom: string;
+    supportEmail: string;
+    adminCount: number;
+    unverifiedUsers: number;
+  };
 };
 
 type Feedback = {
@@ -136,6 +144,40 @@ export default function AdminPage() {
       </p>
 
       <ErrorText>{error}</ErrorText>
+
+      {/* ---- Yapilandirma sagligi ----
+          Ortam degiskenlerinin calisan dagitima ulasip ulasmadigini
+          disaridan anlamak mumkun degil; burada cozulmus haliyle durur. */}
+      <Card>
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <Eyebrow>YAPILANDIRMA</Eyebrow>
+          <Badge tone={stats.config.mailConfigured ? "brand" : "danger"}>
+            {stats.config.mailConfigured ? "E-posta açık" : "E-posta kapalı"}
+          </Badge>
+        </div>
+        <div className="roster" style={{ marginTop: 10 }}>
+          <ConfigRow label="Uygulama adresi" value={stats.config.appUrl} />
+          <ConfigRow label="Gönderen" value={stats.config.mailFrom} />
+          <ConfigRow label="İletişim adresi" value={stats.config.supportEmail} />
+          <ConfigRow
+            label="Yönetici sayısı"
+            value={String(stats.config.adminCount)}
+            warn={stats.config.adminCount === 0}
+          />
+          <ConfigRow
+            label="Doğrulanmamış hesap"
+            value={`${stats.config.unverifiedUsers} / ${stats.totals.users}`}
+            warn={stats.config.unverifiedUsers > 0}
+          />
+        </div>
+        {!stats.config.mailConfigured && (
+          <p className="muted" style={{ margin: "10px 0 0", fontSize: "var(--text-caption)" }}>
+            RESEND_API_KEY tanımlı değil: doğrulama ve şifre sıfırlama
+            e-postaları gönderilmiyor. Vercel&apos;e ekleyip yeniden dağıtman
+            gerekiyor.
+          </p>
+        )}
+      </Card>
 
       {/* ---- Temel sayilar ---- */}
       <Card raised>
@@ -359,6 +401,36 @@ export default function AdminPage() {
           ))}
         </div>
       </Card>
+    </div>
+  );
+}
+
+function ConfigRow({
+  label,
+  value,
+  warn,
+}: {
+  label: string;
+  value: string;
+  warn?: boolean;
+}) {
+  return (
+    <div className="roster-row">
+      <span className="grow">
+        <span className="roster-name">{label}</span>
+      </span>
+      <span
+        className="roster-score"
+        style={{
+          color: warn ? "var(--amber-700)" : undefined,
+          fontFamily: "var(--font-body)",
+          fontSize: "var(--text-caption)",
+          textAlign: "right",
+          wordBreak: "break-all",
+        }}
+      >
+        {value}
+      </span>
     </div>
   );
 }

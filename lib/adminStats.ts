@@ -1,4 +1,7 @@
 import { sql } from "@/lib/db";
+import { brand } from "@/lib/brand";
+import { isMailConfigured } from "@/lib/mailer";
+import { adminEmails } from "@/lib/admin";
 
 // Platform genel gorunumu. Butun sorgular toplu (aggregate) calisir; tek tek
 // kimin kime kac puan verdigi gibi kisisel veriler panele tasinmaz.
@@ -57,6 +60,19 @@ export type AdminStats = {
   /** Son kayitlar; kimin geldigini gormek icin. */
   recentUsers: { id: string; name: string; email: string; created_at: string; groups: number }[];
   feedback: { open: number; total: number };
+  /**
+   * Calisan dagitimin GERCEK yapilandirmasi. Ortam degiskenlerinin o
+   * dagitima ulasip ulasmadigini disaridan anlamak mumkun degil; burada
+   * cozulmus haliyle gosteriliyor. Gizli deger yok, yalnizca "var mi".
+   */
+  config: {
+    appUrl: string;
+    mailConfigured: boolean;
+    mailFrom: string;
+    supportEmail: string;
+    adminCount: number;
+    unverifiedUsers: number;
+  };
 };
 
 function pct(part: number, whole: number): number | null {
@@ -86,7 +102,8 @@ export async function computeAdminStats(): Promise<AdminStats> {
         (SELECT count(*)::int FROM matches) AS matches,
         (SELECT count(*)::int FROM matches WHERE status = 'completed') AS completed_matches,
         (SELECT count(*)::int FROM votes) AS votes,
-        (SELECT count(*)::int FROM match_ratings) AS match_ratings
+        (SELECT count(*)::int FROM match_ratings) AS match_ratings,
+        (SELECT count(*)::int FROM users WHERE email_verified_at IS NOT NULL) AS verified_users
     `,
     sql`
       SELECT
@@ -251,6 +268,14 @@ export async function computeAdminStats(): Promise<AdminStats> {
     feedback: {
       open: Number(feedbackRes.rows[0].open),
       total: Number(feedbackRes.rows[0].total),
+    },
+    config: {
+      appUrl: brand.url,
+      mailConfigured: isMailConfigured(),
+      mailFrom: brand.mailFrom,
+      supportEmail: brand.supportEmail,
+      adminCount: adminEmails().length,
+      unverifiedUsers: Number(t.users) - Number(t.verified_users),
     },
   };
 }
