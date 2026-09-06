@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
+import { maybeNotifyRatingOpen } from "@/lib/ratingNudge";
 import { maybeAutoClosePoll } from "@/lib/pollClose";
 import { sweepCancelledMatches } from "@/lib/cancelledSweep";
 import { matchPhase, phaseRank } from "@/lib/matchStatus";
@@ -81,7 +82,12 @@ export async function GET(req: NextRequest) {
     const results = await Promise.all(
       pending.map(async (m) => ({
         id: m.id as string,
-        result: await maybeProcessMatchRatings(m.id as string),
+        // Islenmediyse mac hala puanlama asamasindadir; katilimcilara
+        // bir kez haber ver.
+        result: await maybeProcessMatchRatings(m.id as string).then(async (r) => {
+          if (!r.processed) await maybeNotifyRatingOpen(m.id as string);
+          return r;
+        }),
       }))
     );
     const processedIds = new Set(

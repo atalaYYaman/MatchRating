@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { isGroupMember } from "@/lib/groupAccess";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
+import { maybeNotifyRatingOpen } from "@/lib/ratingNudge";
 import { matchPhase, ratingDeadline } from "@/lib/matchStatus";
 import { getMatchSquads } from "@/lib/squads";
 import { isPollExpired, maybeAutoClosePoll } from "@/lib/pollClose";
@@ -23,7 +24,9 @@ export async function GET(
   // Anket suresi dolduysa en cok oy alani kesinlestir; mac oynandiysa
   // puanlari isle. Ayri bir cron gerekmesin diye okuma aninda yapiliyor.
   await maybeAutoClosePoll(params.matchId);
-  await maybeProcessMatchRatings(params.matchId);
+  const processed = await maybeProcessMatchRatings(params.matchId);
+  // Islenmediyse mac hala puanlama asamasinda; katilimcilara bir kez haber ver.
+  if (!processed.processed) await maybeNotifyRatingOpen(params.matchId);
 
   const [matchRes, optionsRes, responsesRes, optionVotesRes, attendanceRes, myRatingsRes, ratingResultsRes, squads] =
     await Promise.all([
