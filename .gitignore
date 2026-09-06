@@ -12,3 +12,6 @@ _to_delete/
 
 # Ikon onizlemesi (gecici)
 _icon_preview.png
+
+# Ham ekran goruntuleri (cerceveye girenler store/shot-*.png olarak duruyor)
+store/shots/

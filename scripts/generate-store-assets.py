@@ -83,7 +83,8 @@ def feature_graphic() -> Image.Image:
     return img
 
 
-def shot_frame(shot_path: str, title: str, subtitle: str | None) -> Image.Image:
+def shot_frame(shot_path: str, title: str, subtitle: str | None,
+               crop_top: float = 0.0) -> Image.Image:
     """
     Ekran goruntusunu marka cercevesine oturtur: ustte baslik, altta
     telefon govdesi. Play Store telefon goruntusu icin 1080x1920 uretir.
@@ -99,20 +100,34 @@ def shot_frame(shot_path: str, title: str, subtitle: str | None) -> Image.Image:
         y += centered(d, subtitle, font(36), W // 2, y, (200, 214, 205)) + 40
 
     shot = Image.open(shot_path).convert("RGB")
-    # Telefon govdesi: genislik sabit, yukseklik oranla
+
+    # Telefon govdesi: genislik sabit; yukseklik tuvalin ALTINA kadar.
+    # Telefon her zaman asagi tasiyor, hicbir zaman havada bitmiyor --
+    # kirptigimizda bosluk kalmasin diye yukseklik sabit tutuluyor.
     target_w = int(W * 0.74)
-    target_h = int(shot.height * (target_w / shot.width))
+    px, py = (W - target_w) // 2, 0  # py asagida hesaplaniyor
+
+    py = y + 30
+    target_h = H - py + 40  # alt kenardan tasir
+
+    # Kaynaktan tam bu orana denk gelen bir PENCERE kesiyoruz. Ustten
+    # crop_top kadar atlamak, ekranin degerli kismini (ornegin kurulan
+    # takimlar) yukari almak icin: formun yarisi vitrine cikmasin.
+    need_h = int(shot.height * 0 + shot.width * (target_h / target_w))
+    top = int(shot.height * crop_top)
+    if top + need_h > shot.height:
+        top = max(0, shot.height - need_h)
+    shot = shot.crop((0, top, shot.width, min(shot.height, top + need_h)))
     shot = shot.resize((target_w, target_h), Image.LANCZOS)
 
-    # Koseleri yuvarla
+    # Koseleri yuvarla: yalnizca ust koseler: alt kenar tuvalden tasiyor.
     radius = int(target_w * 0.07)
     mask = Image.new("L", (target_w, target_h), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([0, 0, target_w - 1, target_h - 1],
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, target_w - 1, target_h + radius],
                                            radius=radius, fill=255)
-    px, py = (W - target_w) // 2, y + 30
 
     # Ince cerceve
-    d.rounded_rectangle([px - 6, py - 6, px + target_w + 5, py + target_h + 5],
+    d.rounded_rectangle([px - 6, py - 6, px + target_w + 5, py + target_h + radius],
                         radius=radius + 6, outline=CHALK, width=5)
     img.paste(shot, (px, py), mask)
     return img
@@ -124,12 +139,14 @@ def main():
     ap.add_argument("--title", default="")
     ap.add_argument("--subtitle", default=None)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--crop-top", type=float, default=0.0,
+                    help="Ekran goruntusunun ustunden atilacak oran (0-0.6)")
     args = ap.parse_args()
 
     os.makedirs(OUT, exist_ok=True)
 
     if args.shot:
-        img = shot_frame(args.shot, args.title, args.subtitle)
+        img = shot_frame(args.shot, args.title, args.subtitle, args.crop_top)
         out = args.out or os.path.join(OUT, "screenshot.png")
         img.save(out, "PNG")
         print(f"  {out}  {img.size[0]}x{img.size[1]}")
