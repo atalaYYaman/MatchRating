@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { api, clearToken, getToken, setToken } from "./api";
+import { unregisterPush } from "./push";
 
 export type User = { id: string; name: string; email: string };
 
@@ -55,6 +56,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    // Oturum kapanmadan ONCE: istek yetkilendirme istiyor. Aksi halde
+    // cihaz eski hesaba bagli kalir ve yeni sahibine onun bildirimleri
+    // gider.
+    await unregisterPush();
     await clearToken();
     setUser(null);
   }, []);

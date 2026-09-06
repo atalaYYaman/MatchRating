@@ -1,11 +1,28 @@
 import { Redirect, Stack } from "expo-router";
+import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { ActiveGroupProvider } from "../../lib/active-group";
 import { useAuth } from "../../lib/auth-context";
+import {
+  addNotificationTapListener,
+  consumeInitialNotification,
+  registerForPush,
+} from "../../lib/push";
 import { colors, type } from "../../lib/theme";
 
 export default function AppLayout() {
   const { user, loading } = useAuth();
+
+  // Push kaydi GIRIS SONRASI yapilir: token kullaniciya baglaniyor, once
+  // kaydedersek bildirim yanlis hesaba gider. Bildirime dokunma dinleyicisi
+  // de burada, cunku yonlendirme oturum acikken anlamli.
+  useEffect(() => {
+    if (!user) return;
+    void registerForPush();
+    void consumeInitialNotification();
+    const sub = addNotificationTapListener();
+    return () => sub.remove();
+  }, [user]);
 
   if (loading) {
     return (

@@ -57,5 +57,6 @@ export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: "POST", body }),
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body }),
-  delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  // DELETE de govde alabiliyor: push token cozme gibi uclar icin gerekli.
+  delete: <T>(path: string, body?: unknown) => request<T>(path, { method: "DELETE", body }),
 };

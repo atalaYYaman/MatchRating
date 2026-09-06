@@ -133,6 +133,14 @@ def main():
     assert_safe_zone(mono, "android-icon-monochrome.png")
     save(mono, "android-icon-monochrome.png")
 
+    # Android bildirim ikonu: sistem bunu SILUET olarak kullanir -- renkli
+    # verirsen beyaz kareye cevirir. Tek renk beyaz + seffaf zemin sart.
+    # Adaptive ikondan ayri uretiliyor cunku burada guvenli alan kaygisi
+    # yok; 0.56 ile bildirim cubugunda gereksiz kucuk kalirdi.
+    notif = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
+    notif.alpha_composite(draw_mark(1024, (255, 255, 255), (255, 255, 255), scale=0.82))
+    save(notif, "notification-icon.png")
+
     # Acilis ekrani: zemini app.json'daki renk verdigi icin isaret seffaf.
     splash = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
     splash.alpha_composite(draw_mark(1024, CHALK, AMBER, scale=0.55))

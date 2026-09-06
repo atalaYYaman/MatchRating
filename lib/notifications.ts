@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db";
+import { sendPushSafe } from "@/lib/push";
 
 // Uygulama ici bildirimler. E-posta ya da push gerektirmez; kullanici
 // uygulamayi actiginda gorur.
@@ -64,12 +65,30 @@ export async function notify(input: Input): Promise<number> {
 // anket kesinlesme) KIRMAMALI. Cagri yerleri bunu kullanir; await edilir
 // ki sunucusuz ortamda yanittan sonra kesilmesin, ama asla firlatmaz.
 export async function notifySafe(input: Input): Promise<number> {
+  let written = 0;
   try {
-    return await notify(input);
+    written = await notify(input);
   } catch (err) {
     console.error("[bildirim] yazilamadi:", err);
-    return 0;
   }
+
+  // Push, uygulama ici bildirimin ustune bir haber verme katmani.
+  // Yalnizca YENI yazilan bildirimler icin gonderiyoruz: dedupe sayesinde
+  // notify 0 dondurduyse bu olay zaten daha once duyurulmus demektir,
+  // tekrar push atmak kullaniciyi ikinci kez rahatsiz ederdi.
+  if (written > 0) {
+    await sendPushSafe({
+      userIds: input.userIds,
+      title: input.title,
+      body: input.body,
+      data: {
+        kind: input.kind,
+        groupId: input.groupId,
+        matchId: input.matchId,
+      },
+    });
+  }
+  return written;
 }
 
 /** Bir gruptaki tum uyeler (istege bagli olarak birini haric tutar). */

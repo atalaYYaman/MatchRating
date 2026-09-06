@@ -347,3 +347,21 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user
   ON notifications (user_id, read_at, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_dedupe
   ON notifications (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL;
+
+-- ==========================================================================
+-- PUSH BILDIRIM TOKEN'LARI
+-- ==========================================================================
+
+-- Expo push token'lari. Bir kullanicinin birden fazla cihazi olabilir,
+-- bir cihaz da el degistirebilir; bu yuzden benzersizlik TOKEN uzerinde,
+-- kullanici uzerinde degil. Ayni token baska bir hesaba baglanirsa
+-- sahibi guncellenir (ON CONFLICT ... DO UPDATE).
+CREATE TABLE IF NOT EXISTS push_tokens (
+  token TEXT PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  platform TEXT CHECK (platform IN ('ios', 'android')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_tokens_user ON push_tokens (user_id);
