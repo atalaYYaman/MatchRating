@@ -8,3 +8,7 @@ node_modules
 .vercel
 .env*.local
 _to_delete/
+
+
+# Ikon onizlemesi (gecici)
+_icon_preview.png
