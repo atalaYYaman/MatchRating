@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { isGroupMember } from "@/lib/groupAccess";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
 import { maybeNotifyRatingOpen } from "@/lib/ratingNudge";
+import { groupName, heading, whenLabel } from "@/lib/notifyText";
 import { matchPhase, ratingDeadline } from "@/lib/matchStatus";
 import { getMatchSquads } from "@/lib/squads";
 import { isPollExpired, maybeAutoClosePoll } from "@/lib/pollClose";
@@ -161,7 +162,7 @@ export async function DELETE(
   if (!session) return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
 
   const matchRes = await sql`
-    SELECT m.id, m.status, g.owner_id
+    SELECT m.id, m.status, m.scheduled_at, g.owner_id
     FROM matches m JOIN groups g ON g.id = m.group_id
     WHERE m.id = ${params.matchId} AND m.group_id = ${params.id}
   `;
@@ -191,7 +192,13 @@ export async function DELETE(
     groupId: params.id,
     matchId: params.matchId,
     kind: "mac_iptal",
-    title: "Maç iptal edildi",
+    title: heading("Maç iptal", await groupName(params.id)),
+    // Ilk surumde govde hic yoktu: "Maç iptal edildi" diyip hangi mac
+    // oldugunu soylemiyorduk. Tarihi belli olmayan (anket asamasindaki)
+    // maclarda tarih yerine ne oldugunu yaziyoruz.
+    body: match.scheduled_at
+      ? `${whenLabel(match.scheduled_at as string)} maçı iptal edildi`
+      : "Tarih anketi kapatıldı",
     dedupeKey: `mac_iptal:${params.matchId}`,
   });
 

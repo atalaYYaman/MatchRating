@@ -57,6 +57,39 @@ function projectId(): string | undefined {
   );
 }
 
+// Android bildirim kanallari.
+//
+// Iki kanal, cunku kullanici bildirimleri kanal bazinda kapatiyor. Tek
+// kanal olsaydi anket bildirimlerinden sikilan biri puanlama uyarisini da
+// susturmak zorunda kalirdi -- ve puanlamayi kacirmanin puan cezasi var.
+//
+// IMPORTANCE_HIGH: ilk surumde DEFAULT idi, yani bildirim sessizce
+// bildirim cekmecesine dusuyordu, ekranda banner cikmiyordu. Bizim
+// bildirimlerimizin hepsi zamana bagli; gorulmeyen bildirim ise yaramaz.
+//
+// Kanalin onem derecesi OLUSTURULDUKTAN SONRA degistirilemiyor. Eski
+// "default" kanalini bu yuzden guncelleyemiyoruz, siliyoruz; kimliklerini
+// degistirmek gerekirse yenisini eklemek gerekir.
+const CHANNELS = [
+  { id: "maclar", name: "Maçlar", description: "Yeni maç, anket ve iptal bildirimleri" },
+  { id: "puanlama", name: "Puanlama", description: "Maç sonrası puanlama hatırlatmaları" },
+] as const;
+
+async function setUpChannels() {
+  for (const c of CHANNELS) {
+    await Notifications.setNotificationChannelAsync(c.id, {
+      name: c.name,
+      description: c.description,
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#1F5C3F",
+    });
+  }
+  // Eski tek kanal: onem derecesi degistirilemedigi icin devri gecti.
+  // Silmezsek ayarlarda olu bir "Genel" satiri kaliyor.
+  await Notifications.deleteNotificationChannelAsync("default").catch(() => {});
+}
+
 function reason(err: unknown): string {
   if (err instanceof Error) return err.message;
   return String(err);
@@ -92,12 +125,7 @@ async function attemptRegister(): Promise<PushStatus> {
     // Android 8+ kanal olmadan bildirim gostermiyor. Ayrica Android 13'te
     // izin istemi ilk kanal olusana kadar cikmiyor, o yuzden izinden once.
     try {
-      await Notifications.setNotificationChannelAsync("default", {
-        name: "Genel",
-        importance: Notifications.AndroidImportance.DEFAULT,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: "#1F5C3F",
-      });
+      await setUpChannels();
     } catch (err) {
       // Kanal kurulamazsa da devam: token yine alinabilir.
       console.warn("[push] kanal olusturulamadi:", reason(err));

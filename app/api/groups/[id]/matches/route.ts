@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { isGroupMember, isGroupOwner } from "@/lib/groupAccess";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
 import { maybeNotifyRatingOpen } from "@/lib/ratingNudge";
+import { groupName, heading, whenLabel, withPlace } from "@/lib/notifyText";
 import { getActiveSeason } from "@/lib/seasons";
 import { maybeAutoClosePoll } from "@/lib/pollClose";
 import { sweepCancelledMatches } from "@/lib/cancelledSweep";
@@ -197,8 +198,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       groupId: params.id,
       matchId: created.id as string,
       kind: "mac_olusturuldu",
-      title: "Yeni maç var",
-      body: location,
+      title: heading("Yeni maç", await groupName(params.id)),
+      body: withPlace(whenLabel(scheduledAt), location),
       dedupeKey: `mac_olusturuldu:${created.id}`,
     });
 
@@ -252,8 +253,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     groupId: params.id,
     matchId: match.id as string,
     kind: "mac_olusturuldu",
-    title: "Yeni anket açıldı",
-    body: "Katılabileceğin tarihleri işaretle.",
+    title: heading("Yeni anket", await groupName(params.id)),
+    // Sadece "isaretle" demek yetmiyordu: kac secenek oldugunu ve ne
+    // kadar suresi kaldigini bilmeden kimse aciliyet hissetmiyor.
+    body: `${options.length} tarih önerildi · oylama ${whenLabel(pollClosesAt)} kapanıyor`,
     dedupeKey: `mac_olusturuldu:${match.id}`,
   });
 

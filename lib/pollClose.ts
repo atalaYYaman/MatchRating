@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db";
 import { groupMemberIds, notifySafe } from "@/lib/notifications";
+import { groupName, heading, whenLabel, withPlace } from "@/lib/notifyText";
 
 // Anketin bir secenegini kesinlestirir: maci planlar ve anket cevaplarindan
 // yoklamayi onceden doldurur. Hem yoneticinin elle secimi hem de sure dolunca
@@ -41,8 +42,8 @@ export async function finalizeMatchOption(
       groupId,
       matchId,
       kind: "mac_planlandi",
-      title: "Maç tarihi kesinleşti",
-      body: option.location,
+      title: heading("Maç tarihi belli", await groupName(groupId)),
+      body: withPlace(whenLabel(option.starts_at), option.location),
       dedupeKey: `mac_planlandi:${matchId}`,
     });
   }

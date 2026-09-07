@@ -15,6 +15,20 @@ export type NotificationKind =
   | "puanlama_acildi"
   | "mac_iptal";
 
+// Android kanallari. Kullanici bildirimleri kanal bazinda kapatabiliyor;
+// tek kanal olsaydi anketten sikilan biri puanlama uyarisini da susturmak
+// zorunda kalirdi -- ve puanlamayi kacirmanin puan cezasi var.
+//
+// Kanal onemi (importance) olusturulduktan SONRA degistirilemiyor, o
+// yuzden kanal adlarini degistirirken yeni bir kimlik vermek gerekiyor
+// (bkz. mobile/lib/push.ts).
+export const CHANNEL_BY_KIND: Record<NotificationKind, string> = {
+  mac_olusturuldu: "maclar",
+  mac_planlandi: "maclar",
+  mac_iptal: "maclar",
+  puanlama_acildi: "puanlama",
+};
+
 type Input = {
   userIds: string[];
   groupId: string | null;
@@ -81,6 +95,7 @@ export async function notifySafe(input: Input): Promise<number> {
       userIds: input.userIds,
       title: input.title,
       body: input.body,
+      channelId: CHANNEL_BY_KIND[input.kind],
       data: {
         kind: input.kind,
         groupId: input.groupId,

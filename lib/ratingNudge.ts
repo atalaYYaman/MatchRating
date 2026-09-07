@@ -1,6 +1,7 @@
 import { sql } from "@/lib/db";
 import { matchEndsAt, ratingDeadline } from "@/lib/matchStatus";
 import { notifySafe } from "@/lib/notifications";
+import { groupName, heading, timeLabel } from "@/lib/notifyText";
 
 // "Puanlama acildi" bildirimi.
 //
@@ -44,8 +45,11 @@ export async function maybeNotifyRatingOpen(matchId: string): Promise<number> {
     groupId: match.group_id as string,
     matchId,
     kind: "puanlama_acildi",
-    title: "Puanlama açıldı",
-    body: "Maçtaki arkadaşlarını puanla.",
+    title: heading("Puanlama açık", await groupName(match.group_id as string)),
+    // Sureyi ve sonucu yaziyoruz: puanlamayan oyuncu puan cezasi
+    // aliyor (bkz. NO_RATING_PENALTY). Bunu soylemeden gonderilen
+    // hatirlatma, cezayi surpriz haline getiriyordu.
+    body: `${timeLabel(scheduledAt)} maçındaki arkadaşlarını puanla · puanlamazsan puan kaybedersin`,
     dedupeKey: `puanlama_acildi:${matchId}`,
   });
 }

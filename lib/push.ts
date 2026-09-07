@@ -17,6 +17,15 @@ type PushMessage = {
   body?: string;
   data?: Record<string, unknown>;
   sound: "default";
+  /** Android: bildirimin hangi kanaldan gosterilecegi. */
+  channelId?: string;
+  /**
+   * Android'in Doze modunda "normal" oncelikli bildirimler ekran
+   * acilana kadar bekletilebiliyor. Bizim bildirimlerimizin hepsi
+   * zamana bagli (mac saati, puanlama suresi), bekletilmeleri
+   * ise yaramaz hale getiriyor.
+   */
+  priority: "high";
 };
 
 /** Kullanicilarin kayitli cihaz token'lari. */
@@ -44,6 +53,7 @@ export async function sendPush(input: {
   title: string;
   body?: string | null;
   data?: Record<string, unknown>;
+  channelId?: string;
 }): Promise<{ sent: number }> {
   const tokens = await tokensFor([...new Set(input.userIds)]);
   if (tokens.length === 0) return { sent: 0 };
@@ -54,6 +64,8 @@ export async function sendPush(input: {
     body: input.body ?? undefined,
     data: input.data,
     sound: "default",
+    channelId: input.channelId,
+    priority: "high",
   }));
 
   let sent = 0;
@@ -102,6 +114,7 @@ export async function sendPushSafe(input: {
   title: string;
   body?: string | null;
   data?: Record<string, unknown>;
+  channelId?: string;
 }): Promise<number> {
   try {
     const { sent } = await sendPush(input);

@@ -32,6 +32,7 @@ export async function POST() {
     userIds: [session.userId],
     title: "Panenka test bildirimi",
     body: "Bu bildirimi gördüysen kurulum çalışıyor.",
+    channelId: "maclar",
     data: { kind: "test" },
   });
 
