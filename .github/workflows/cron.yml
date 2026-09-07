@@ -1,0 +1,47 @@
+name: Zamanlanmis isler
+
+# Panenka'nin zamana bagli isleri: anket kapatma, puanlama bildirimi,
+# mac hatirlatmalari, iptal temizligi.
+#
+# Neden Vercel Cron degil: Vercel'in Hobby plani gunde YALNIZCA bir cron
+# calistiriyor, "maca 3 saat kaldi" bildirimi icin bu ise yaramaz. Depo
+# herkese acik oldugu icin GitHub Actions dakikalari ucretsiz.
+#
+# Sir asla bu dosyada durmaz -- depo herkese acik. GitHub Secrets'tan
+# geliyor ve gunluklerde otomatik maskeleniyor.
+
+on:
+  schedule:
+    # 15 dakikada bir. GitHub yogunlukta calismalari geciktirebiliyor;
+    # isler idempotent oldugu icin gecikme zarar vermiyor, yalnizca
+    # bildirim birkac dakika sonra gidiyor.
+    - cron: "*/15 * * * *"
+  # Elle tetikleme: kurulumu dogrularken ve bir sey bozulunca.
+  workflow_dispatch:
+
+# Ust uste binmesin: onceki calisma bitmeden yenisi baslamasin.
+concurrency:
+  group: panenka-cron
+  cancel-in-progress: false
+
+jobs:
+  tetikle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Zamanlanmis isleri calistir
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET tanimli degil. Depo ayarlarindan ekleyin."
+            exit 1
+          fi
+
+          # --fail-with-body: HTTP hatasinda hem cikis kodu hem govde gelsin,
+          # yoksa 401'i sessiz basari sanardik.
+          curl --fail-with-body --silent --show-error \
+               --max-time 120 \
+               --retry 2 --retry-delay 10 --retry-connrefused \
+               -X POST \
+               -H "Authorization: Bearer $CRON_SECRET" \
+               https://www.panenka.tr/api/cron
