@@ -365,3 +365,15 @@ CREATE TABLE IF NOT EXISTS push_tokens (
 );
 
 CREATE INDEX IF NOT EXISTS idx_push_tokens_user ON push_tokens (user_id);
+
+/* Bildirim tercihleri.
+   Yalnizca kullanicinin ACIKCA yaptigi secim yazilir; satiri olmayan
+   herkes bildirimi alir. Boylece yeni bir bildirim turu eklendiginde
+   kimseye geriye donuk kayit yazmak gerekmiyor, varsayilan acik kaliyor. */
+CREATE TABLE IF NOT EXISTS notification_prefs (
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  enabled BOOLEAN NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, kind)
+);

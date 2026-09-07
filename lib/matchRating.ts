@@ -1,6 +1,8 @@
 import { sql } from "@/lib/db";
 import { computeMatchAdjustments, RatingRow } from "@/lib/matchScoring";
 import { ratingDeadline } from "@/lib/matchStatus";
+import { notifySafe } from "@/lib/notifications";
+import { groupName, heading, timeLabel } from "@/lib/notifyText";
 
 // Mac sonuclarinin veritabani katmani. Puanlama matematigi lib/matchScoring.ts.
 export {
@@ -120,6 +122,38 @@ export async function maybeProcessMatchRatings(
     UPDATE matches SET status = 'completed', ratings_processed_at = now()
     WHERE id = ${matchId}
   `;
+
+  // Dongunun kapandigi an: oyuncu puanladi, simdi sonucunu goruyor.
+  // Herkese KENDI degisimini yaziyoruz -- "puanlar islendi" demek tek
+  // basina kimseyi uygulamaya dondurmuyor, "-6.0" donduruyor.
+  const net = new Map<string, number>();
+  for (const adj of adjustments) {
+    net.set(adj.userId, (net.get(adj.userId) ?? 0) + adj.delta);
+  }
+  const bodyByUser: Record<string, string> = {};
+  for (const userId of participantIds) {
+    const total = net.get(userId) ?? 0;
+    const sign = total > 0 ? `+${total.toFixed(1)}` : total.toFixed(1);
+    bodyByUser[userId] = excluded.has(userId)
+      ? `Puanlamadığın için ${sign} aldın`
+      : total === 0
+        ? "Yeteneklerin değişmedi"
+        : `Yeteneklerin toplam ${sign} değişti`;
+  }
+
+  await notifySafe({
+    userIds: participantIds,
+    groupId: match.group_id as string,
+    matchId,
+    kind: "puanlar_islendi",
+    title: heading(
+      `${timeLabel(scheduledAt)} maçı değerlendirildi`,
+      await groupName(match.group_id as string)
+    ),
+    body: "Puanların güncellendi.",
+    bodyByUser,
+    dedupeKey: `puanlar_islendi:${matchId}`,
+  });
 
   return {
     processed: true,

@@ -52,11 +52,19 @@ export default function NotificationsPage() {
         eyebrow="BİLDİRİMLER"
         title={unread > 0 ? `${unread} yeni` : "Bildirimler"}
         action={
-          unread > 0 ? (
-            <button className="secondary small" onClick={markAll}>
-              Tümünü okundu yap
-            </button>
-          ) : undefined
+          // Ayarlar HER ZAMAN gorunur: bildirimden rahatsiz olan kisi
+          // tam da bu ekrandayken kapatmak istiyor, aramak zorunda
+          // kalmamali.
+          <div className="row" style={{ gap: 8 }}>
+            {unread > 0 && (
+              <button className="secondary small" onClick={markAll}>
+                Tümünü okundu yap
+              </button>
+            )}
+            <Link href="/bildirim-ayarlari">
+              <button className="secondary small">Ayarlar</button>
+            </Link>
+          </div>
         }
       />
 

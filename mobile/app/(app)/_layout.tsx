@@ -59,6 +59,10 @@ export default function AppLayout() {
         <Stack.Screen name="geri-bildirim" options={{ title: "Geri Bildirim" }} />
         <Stack.Screen name="bildirimler" options={{ title: "Bildirimler" }} />
         <Stack.Screen name="bildirim-durumu" options={{ title: "Bildirim Durumu" }} />
+        <Stack.Screen
+          name="bildirim-ayarlari"
+          options={{ title: "Bildirim Ayarları" }}
+        />
         <Stack.Screen name="group/[id]/index" options={{ title: "Takım" }} />
         <Stack.Screen name="group/[id]/vote" options={{ title: "Oylama Yap" }} />
         <Stack.Screen name="group/[id]/teams" options={{ title: "Takımları Oluştur" }} />

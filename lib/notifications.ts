@@ -1,33 +1,19 @@
 import { sql } from "@/lib/db";
+import { CHANNEL_BY_KIND, NotificationKind } from "@/lib/notificationKinds";
+import { filterByPref } from "@/lib/notifyPrefs";
 import { sendPushSafe } from "@/lib/push";
 
-// Uygulama ici bildirimler. E-posta ya da push gerektirmez; kullanici
-// uygulamayi actiginda gorur.
+// Uygulama ici bildirimler + push.
 //
 // Uretim noktasi: olaylarin gerceklestigi rotalar (mac olusturma, anket
 // kesinlesme, puanlama penceresi acilmasi). dedupe_key ayni olay icin ayni
 // kisiye ikinci bildirimin yazilmasini engeller; boylece "olustur" cagrisi
 // tekrar calissa bile kullanici iki kez uyarilmaz.
-
-export type NotificationKind =
-  | "mac_olusturuldu"
-  | "mac_planlandi"
-  | "puanlama_acildi"
-  | "mac_iptal";
-
-// Android kanallari. Kullanici bildirimleri kanal bazinda kapatabiliyor;
-// tek kanal olsaydi anketten sikilan biri puanlama uyarisini da susturmak
-// zorunda kalirdi -- ve puanlamayi kacirmanin puan cezasi var.
 //
-// Kanal onemi (importance) olusturulduktan SONRA degistirilemiyor, o
-// yuzden kanal adlarini degistirirken yeni bir kimlik vermek gerekiyor
-// (bkz. mobile/lib/push.ts).
-export const CHANNEL_BY_KIND: Record<NotificationKind, string> = {
-  mac_olusturuldu: "maclar",
-  mac_planlandi: "maclar",
-  mac_iptal: "maclar",
-  puanlama_acildi: "puanlama",
-};
+// Turlerin listesi lib/notificationKinds.ts'te; ayar ekrani da oradan
+// uretiliyor.
+
+export type { NotificationKind };
 
 type Input = {
   userIds: string[];
@@ -36,13 +22,26 @@ type Input = {
   kind: NotificationKind;
   title: string;
   body?: string | null;
+  /**
+   * Kullaniciya ozel govde. Verilmeyen kullanicilar `body` alir.
+   * Ornek: puanlar islendiginde herkese kendi puan degisimini yazmak.
+   */
+  bodyByUser?: Record<string, string>;
   /** Ayni olay icin sabit bir anahtar; ornegin `puanlama:<macId>`. */
   dedupeKey?: string | null;
 };
 
-export async function notify(input: Input): Promise<number> {
-  const users = [...new Set(input.userIds)].filter(Boolean);
-  if (users.length === 0) return 0;
+/**
+ * Bildirimleri yazar ve GERCEKTEN yazilan kullanicilari dondurur.
+ *
+ * Sayi degil liste donmesi onemli: push yalnizca satir yazilan kisiye
+ * gitmeli. Onceden push `input.userIds`'e gidiyordu, yani dedupe bir
+ * kismini elese bile herkes ikinci kez uyariliyordu.
+ */
+export async function notify(input: Input): Promise<string[]> {
+  // Kapatmis olanlari en basta cikariyoruz: ne zil, ne push.
+  const users = await filterByPref(input.userIds, input.kind);
+  if (users.length === 0) return [];
 
   // Tek sorguda toplu insert; kullanici basina ayri istek uzak veritabaninda
   // pahali kaliyor (skill_adjustments'taki yaklasimin aynisi).
@@ -60,7 +59,7 @@ export async function notify(input: Input): Promise<number> {
       input.matchId,
       input.kind,
       input.title,
-      input.body ?? null,
+      input.bodyByUser?.[userId] ?? input.body ?? null,
       input.dedupeKey ? `${input.dedupeKey}` : null
     );
   });
@@ -69,17 +68,18 @@ export async function notify(input: Input): Promise<number> {
     `INSERT INTO notifications
        (user_id, group_id, match_id, kind, title, body, dedupe_key)
      VALUES ${values.join(", ")}
-     ON CONFLICT DO NOTHING`,
+     ON CONFLICT DO NOTHING
+     RETURNING user_id`,
     params
   );
-  return res.rowCount ?? 0;
+  return res.rows.map((r) => r.user_id as string);
 }
 
 // Bildirim yan etkidir: yazilamamasi asil islemi (mac olusturma, iptal,
 // anket kesinlesme) KIRMAMALI. Cagri yerleri bunu kullanir; await edilir
 // ki sunucusuz ortamda yanittan sonra kesilmesin, ama asla firlatmaz.
 export async function notifySafe(input: Input): Promise<number> {
-  let written = 0;
+  let written: string[] = [];
   try {
     written = await notify(input);
   } catch (err) {
@@ -87,14 +87,14 @@ export async function notifySafe(input: Input): Promise<number> {
   }
 
   // Push, uygulama ici bildirimin ustune bir haber verme katmani.
-  // Yalnizca YENI yazilan bildirimler icin gonderiyoruz: dedupe sayesinde
-  // notify 0 dondurduyse bu olay zaten daha once duyurulmus demektir,
-  // tekrar push atmak kullaniciyi ikinci kez rahatsiz ederdi.
-  if (written > 0) {
+  // Yalnizca YENI satir yazilan kisilere gidiyor: dedupe eledigi ya da
+  // tercihinde kapattigi kisiye push atmak dogru olmazdi.
+  if (written.length > 0) {
     await sendPushSafe({
-      userIds: input.userIds,
+      userIds: written,
       title: input.title,
       body: input.body,
+      bodyByUser: input.bodyByUser,
       channelId: CHANNEL_BY_KIND[input.kind],
       data: {
         kind: input.kind,
@@ -103,7 +103,7 @@ export async function notifySafe(input: Input): Promise<number> {
       },
     });
   }
-  return written;
+  return written.length;
 }
 
 /** Bir gruptaki tum uyeler (istege bagli olarak birini haric tutar). */

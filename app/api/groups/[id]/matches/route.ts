@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { isGroupMember, isGroupOwner } from "@/lib/groupAccess";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
 import { maybeNotifyRatingOpen } from "@/lib/ratingNudge";
+import { maybeNotifyUpcoming } from "@/lib/matchReminders";
 import { groupName, heading, whenLabel, withPlace } from "@/lib/notifyText";
 import { getActiveSeason } from "@/lib/seasons";
 import { maybeAutoClosePoll } from "@/lib/pollClose";
@@ -94,6 +95,18 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   // Oynanmis ama henuz islenmemis maclar varsa burada isle; ayri bir cron
   // gerekmesin diye.
+  // Yaklasan maclar icin hatirlatma. Gecmis maclarin islenmesiyle ayni
+  // yerde duruyor: her ikisi de "birisi uygulamayi actiginda" calisan
+  // tembel isler, ayri bir zamanlanmis is yok.
+  const upcoming = matchesRes.rows.filter(
+    (m) =>
+      m.status === "scheduled" &&
+      m.scheduled_at &&
+      new Date(m.scheduled_at as string).getTime() > Date.now() &&
+      new Date(m.scheduled_at as string).getTime() - Date.now() <= 24 * 3_600_000
+  );
+  await Promise.all(upcoming.map((m) => maybeNotifyUpcoming(m.id as string)));
+
   const pending = matchesRes.rows.filter(
     (m) =>
       m.status === "scheduled" &&

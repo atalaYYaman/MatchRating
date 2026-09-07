@@ -117,6 +117,15 @@ export default function TabsLayout() {
             <Pressable
               onPress={() => {
                 setMoreOpen(false);
+                router.push("/bildirim-ayarlari");
+              }}
+              style={[styles.item, styles.itemBorder]}
+            >
+              <Text style={styles.itemText}>Bildirim Ayarları</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setMoreOpen(false);
                 router.push("/bildirim-durumu");
               }}
               style={[styles.item, styles.itemBorder]}

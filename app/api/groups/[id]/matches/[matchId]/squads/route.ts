@@ -9,10 +9,13 @@ import {
   parseGuestInputs,
   setSquadsLocked,
 } from "@/lib/squads";
+import { notifySafe } from "@/lib/notifications";
+import { groupName, heading, whenLabel, withPlace } from "@/lib/notifyText";
 
 async function loadMatch(groupId: string, matchId: string) {
   const res = await sql`
-    SELECT id, match_kind, status, squads_locked_at FROM matches
+    SELECT id, match_kind, status, squads_locked_at, scheduled_at, location
+    FROM matches
     WHERE id = ${matchId} AND group_id = ${groupId}
   `;
   return res.rows[0] ?? null;
@@ -103,6 +106,28 @@ export async function PATCH(
   if (action === "lock") {
     await setSquadsLocked(params.matchId, true);
     const squads = await getMatchSquads(params.matchId);
+
+    // Kadro KILITLENINCE haber veriyoruz, kurulunca degil: kilitlenmemis
+    // kadro daha degisebilir, herkesi erken uyarip sonra karistirmak
+    // bildirimi guvenilmez yapardi.
+    const going = await sql`
+      SELECT user_id FROM match_attendance
+      WHERE match_id = ${params.matchId} AND status = 'yes'
+    `;
+    await notifySafe({
+      userIds: going.rows.map((r) => r.user_id as string),
+      groupId: params.id,
+      matchId: params.matchId,
+      kind: "kadro_hazir",
+      title: heading("Kadrolar belli", await groupName(params.id)),
+      body: match.scheduled_at
+        ? withPlace(
+            whenLabel(match.scheduled_at as string),
+            match.location as string | null
+          )
+        : "Takımını görmek için maça gir.",
+      dedupeKey: `kadro_hazir:${params.matchId}`,
+    });
     return NextResponse.json({ squads });
   }
 

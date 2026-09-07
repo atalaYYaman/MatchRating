@@ -73,6 +73,14 @@ export default function NotificationsScreen() {
         <Button title="Tümünü okundu yap" variant="secondary" onPress={markAll} />
       )}
 
+      {/* Ayarlar HER ZAMAN burada: bildirimden rahatsiz olan kisi tam da
+          bu ekrandayken kapatmak istiyor, menude aramak zorunda kalmasin. */}
+      <Button
+        title="Bildirim ayarları"
+        variant="secondary"
+        onPress={() => router.push("/bildirim-ayarlari")}
+      />
+
       {loading && (
         <View style={{ paddingVertical: 24 }}>
           <ActivityIndicator color={colors.pitch} />

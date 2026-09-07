@@ -28,14 +28,23 @@ type PushMessage = {
   priority: "high";
 };
 
-/** Kullanicilarin kayitli cihaz token'lari. */
-async function tokensFor(userIds: string[]): Promise<string[]> {
+/**
+ * Kullanicilarin kayitli cihazlari. Token ile birlikte SAHIBI de
+ * donduruluyor: govde kullaniciya gore degisebiliyor (ornegin herkesin
+ * kendi puan degisimi).
+ */
+async function devicesFor(
+  userIds: string[]
+): Promise<{ userId: string; token: string }[]> {
   if (userIds.length === 0) return [];
   const res = await sql.query(
-    `SELECT token FROM push_tokens WHERE user_id = ANY($1::uuid[])`,
+    `SELECT user_id, token FROM push_tokens WHERE user_id = ANY($1::uuid[])`,
     [userIds]
   );
-  return res.rows.map((r) => r.token as string);
+  return res.rows.map((r) => ({
+    userId: r.user_id as string,
+    token: r.token as string,
+  }));
 }
 
 /**
@@ -54,14 +63,16 @@ export async function sendPush(input: {
   body?: string | null;
   data?: Record<string, unknown>;
   channelId?: string;
+  /** Kullaniciya ozel govde; verilmeyen kullanici `body` alir. */
+  bodyByUser?: Record<string, string>;
 }): Promise<{ sent: number }> {
-  const tokens = await tokensFor([...new Set(input.userIds)]);
-  if (tokens.length === 0) return { sent: 0 };
+  const devices = await devicesFor([...new Set(input.userIds)]);
+  if (devices.length === 0) return { sent: 0 };
 
-  const messages: PushMessage[] = tokens.map((to) => ({
-    to,
+  const messages: PushMessage[] = devices.map((d) => ({
+    to: d.token,
     title: input.title,
-    body: input.body ?? undefined,
+    body: input.bodyByUser?.[d.userId] ?? input.body ?? undefined,
     data: input.data,
     sound: "default",
     channelId: input.channelId,
@@ -115,6 +126,7 @@ export async function sendPushSafe(input: {
   body?: string | null;
   data?: Record<string, unknown>;
   channelId?: string;
+  bodyByUser?: Record<string, string>;
 }): Promise<number> {
   try {
     const { sent } = await sendPush(input);

@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { maybeProcessMatchRatings } from "@/lib/matchRating";
 import { maybeNotifyRatingOpen } from "@/lib/ratingNudge";
+import { maybeNotifyUpcoming } from "@/lib/matchReminders";
 import { maybeAutoClosePoll } from "@/lib/pollClose";
 import { sweepCancelledMatches } from "@/lib/cancelledSweep";
 import { matchPhase, phaseRank } from "@/lib/matchStatus";
@@ -70,6 +71,18 @@ export async function GET(req: NextRequest) {
       }
     }
   }
+
+  // Yaklasan maclar icin hatirlatma. Gecmis maclarin islenmesiyle ayni
+  // yerde duruyor: her ikisi de "birisi uygulamayi actiginda" calisan
+  // tembel isler, ayri bir zamanlanmis is yok.
+  const upcoming = matchesRes.rows.filter(
+    (m) =>
+      m.status === "scheduled" &&
+      m.scheduled_at &&
+      new Date(m.scheduled_at as string).getTime() > Date.now() &&
+      new Date(m.scheduled_at as string).getTime() - Date.now() <= 24 * 3_600_000
+  );
+  await Promise.all(upcoming.map((m) => maybeNotifyUpcoming(m.id as string)));
 
   // Oynanmis ama henuz islenmemis maclari burada isle (ayri cron yok).
   const pending = matchesRes.rows.filter(
