@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "249262231431",
+    "project_id": "panenka-318fd",
+    "storage_bucket": "panenka-318fd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:249262231431:android:6dd9566a4e4abb8a934d22",
+        "android_client_info": {
+          "package_name": "com.otlak.matchrating"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdyTd7NkDi8i5QjUQG8V-GuVlclP1YEks"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

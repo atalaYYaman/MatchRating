@@ -114,6 +114,15 @@ export default function TabsLayout() {
             >
               <Text style={styles.itemText}>Kariyerim</Text>
             </Pressable>
+            <Pressable
+              onPress={() => {
+                setMoreOpen(false);
+                router.push("/bildirim-durumu");
+              }}
+              style={[styles.item, styles.itemBorder]}
+            >
+              <Text style={styles.itemText}>Bildirim Durumu</Text>
+            </Pressable>
             {MORE_ITEMS.map((item, index) => (
               <Pressable
                 key={item.path}

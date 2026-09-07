@@ -16,6 +16,7 @@
     },
     "android": {
       "package": "com.otlak.matchrating",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#1F5C3F",
         "foregroundImage": "./assets/android-icon-foreground.png",

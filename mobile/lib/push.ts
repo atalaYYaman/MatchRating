@@ -9,7 +9,34 @@ import { api } from "./api";
 //
 // Uygulama ici bildirim sistemi (Bildirimler ekrani) bundan bagimsiz
 // calisir; push yalnizca "haberin olsun" katmani. Bu yuzden buradaki
-// hicbir hata uygulamayi durdurmaz, sessizce gecilir.
+// hicbir hata uygulamayi durdurmaz.
+//
+// Ama SESSIZ de kalmamali. Ilk surumde her hata tek bir catch'te
+// yutuluyordu; izin reddi, FCM kurulumunun eksikligi ve ag hatasi ayni
+// sonucu veriyordu: hicbir sey. Cihaz tablosu bos kaldi ve bunu aylarca
+// kimse fark etmedi. Artik her durak kendi durumunu donduruyor, Bildirim
+// Durumu ekrani da bunu oldugu gibi gosteriyor.
+
+/** Kayit zincirinin nerede durdugunu anlatir. */
+export type PushStatus =
+  /** Cihaz kayitli, bildirim gelebilir. */
+  | { state: "hazir"; token: string }
+  /** Kullanici izin vermedi. canAskAgain false ise yalnizca sistem ayarlarindan acilir. */
+  | { state: "izin-yok"; canAskAgain: boolean }
+  /** Emulator: Google Play Services yok, token uretilemiyor. */
+  | { state: "emulator" }
+  /** Izin var ama token alinamadi. Genellikle FCM kurulumu eksik demek. */
+  | { state: "token-alinamadi"; error: string }
+  /** Token alindi ama sunucuya yazilamadi; ag ya da oturum sorunu. */
+  | { state: "sunucuya-yazilamadi"; token: string; error: string };
+
+export const PUSH_STATUS_LABEL: Record<PushStatus["state"], string> = {
+  hazir: "Bildirimler açık",
+  "izin-yok": "Bildirim izni verilmedi",
+  emulator: "Emülatörde çalışmaz",
+  "token-alinamadi": "Cihaz kaydı alınamadı",
+  "sunucuya-yazilamadi": "Sunucuya yazılamadı",
+};
 
 // Uygulama acikken de bildirim gorunsun: varsayilanda on plandayken
 // hicbir sey gostermiyor, kullanici bir sey olmadi saniyor.
@@ -30,48 +57,87 @@ function projectId(): string | undefined {
   );
 }
 
+function reason(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
+
+// Son durum: Bildirim Durumu ekrani yeniden kayit denemeden de okuyabilsin.
+let lastStatus: PushStatus | null = null;
+export function lastPushStatus(): PushStatus | null {
+  return lastStatus;
+}
+
 /**
  * Izin ister, token alir ve sunucuya kaydeder.
  * Giris yapildiktan SONRA cagrilmali: token kullaniciya baglaniyor.
+ *
+ * Idempotent: tekrar cagirmak zararsiz, sunucuda ON CONFLICT ile
+ * guncelleniyor. Bildirim Durumu ekrani bunu yeniden dener.
  */
-export async function registerForPush(): Promise<string | null> {
-  try {
-    // Emulatorde push token uretilemiyor; denemek hata firlatiyor.
-    if (!Device.isDevice) return null;
+export async function registerForPush(): Promise<PushStatus> {
+  const status = await attemptRegister();
+  lastStatus = status;
+  if (status.state !== "hazir") {
+    console.warn("[push] kayit tamamlanmadi:", JSON.stringify(status));
+  }
+  return status;
+}
 
-    if (Platform.OS === "android") {
-      // Android 8+ kanal olmadan bildirim gostermiyor.
+async function attemptRegister(): Promise<PushStatus> {
+  // Emulatorde push token uretilemiyor; denemek hata firlatiyor.
+  if (!Device.isDevice) return { state: "emulator" };
+
+  if (Platform.OS === "android") {
+    // Android 8+ kanal olmadan bildirim gostermiyor. Ayrica Android 13'te
+    // izin istemi ilk kanal olusana kadar cikmiyor, o yuzden izinden once.
+    try {
       await Notifications.setNotificationChannelAsync("default", {
         name: "Genel",
         importance: Notifications.AndroidImportance.DEFAULT,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#1F5C3F",
       });
+    } catch (err) {
+      // Kanal kurulamazsa da devam: token yine alinabilir.
+      console.warn("[push] kanal olusturulamadi:", reason(err));
     }
+  }
 
-    const existing = await Notifications.getPermissionsAsync();
-    let status = existing.status;
-    if (status !== "granted") {
-      // Reddedildiyse tekrar tekrar sormuyoruz; sistem zaten sormaz ama
-      // kullaniciyi da bosuna bekletmeyelim.
-      if (!existing.canAskAgain) return null;
-      status = (await Notifications.requestPermissionsAsync()).status;
-    }
-    if (status !== "granted") return null;
+  const existing = await Notifications.getPermissionsAsync();
+  let granted = existing.granted;
+  if (!granted) {
+    // Reddedildiyse sistem zaten tekrar sormuyor; kullaniciyi da bosuna
+    // bekletmeyelim, ayarlara yonlendirmek Bildirim Durumu ekraninin isi.
+    if (!existing.canAskAgain) return { state: "izin-yok", canAskAgain: false };
+    granted = (await Notifications.requestPermissionsAsync()).granted;
+  }
+  if (!granted) return { state: "izin-yok", canAskAgain: true };
 
+  let token: string;
+  try {
     const pid = projectId();
-    const tokenRes = await Notifications.getExpoPushTokenAsync(
+    const res = await Notifications.getExpoPushTokenAsync(
       pid ? { projectId: pid } : undefined
     );
-    const token = tokenRes.data;
-    if (!token) return null;
-
-    await api.post("/api/push/register", { token, platform: Platform.OS });
-    return token;
-  } catch {
-    // Izin yok, ag yok ya da Expo Go: push olmadan devam.
-    return null;
+    token = res.data;
+  } catch (err) {
+    // Buranin en sik sebebi: google-services.json derlemede yok ya da
+    // FCM kimlik bilgileri EAS'e yuklenmemis. Mesaji oldugu gibi
+    // tasiyoruz, tahmin etmiyoruz.
+    return { state: "token-alinamadi", error: reason(err) };
   }
+  if (!token) {
+    return { state: "token-alinamadi", error: "Expo bos token dondurdu." };
+  }
+
+  try {
+    await api.post("/api/push/register", { token, platform: Platform.OS });
+  } catch (err) {
+    return { state: "sunucuya-yazilamadi", token, error: reason(err) };
+  }
+
+  return { state: "hazir", token };
 }
 
 /**
@@ -92,8 +158,11 @@ export async function unregisterPush(token?: string | null) {
     }
     if (!t) return;
     await api.delete("/api/push/register", { token: t });
-  } catch {
+  } catch (err) {
     // Onemli degil: sunucu tarafinda gecersiz token zaten temizleniyor.
+    console.warn("[push] kayit cozulemedi:", reason(err));
+  } finally {
+    lastStatus = null;
   }
 }
 
